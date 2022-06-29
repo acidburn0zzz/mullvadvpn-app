@@ -12,17 +12,17 @@ import NetworkExtension
 class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
     typealias EncodeErrorHandler = (Error) -> Void
 
-    private let state: TunnelManager.State
+    private let interactor: TunnelInteractor
     private var encodeErrorHandler: EncodeErrorHandler?
 
     init(
         dispatchQueue: DispatchQueue,
-        state: TunnelManager.State,
+        interactor: TunnelInteractor,
         encodeErrorHandler: @escaping EncodeErrorHandler,
         completionHandler: @escaping CompletionHandler
     )
     {
-        self.state = state
+        self.interactor = interactor
         self.encodeErrorHandler = encodeErrorHandler
 
         super.init(
@@ -33,25 +33,25 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
     }
 
     override func main() {
-        guard let tunnelSettings = state.tunnelSettings else {
-            finish(completion: .failure(.unsetAccount))
+        guard case .loggedIn = interactor.deviceState else {
+            finish(completion: .failure(.invalidDeviceState))
             return
         }
 
-        switch state.tunnelStatus.state {
+        switch interactor.tunnelStatus.state {
         case .disconnecting(.nothing):
-            state.tunnelStatus.state = .disconnecting(.reconnect)
+            interactor.updateTunnelState(.disconnecting(.reconnect))
 
             finish(completion: .success(()))
 
         case .disconnected, .pendingReconnect:
             guard let cachedRelays = RelayCache.Tracker.shared.getCachedRelays() else {
-                finish(completion: .failure(.readRelays))
+                finish(completion: .failure(.relayListUnavailable))
                 return
             }
 
-            didReceiveRelays(
-                tunnelSettings: tunnelSettings,
+            createAndStartTunnel(
+                relayConstraints: interactor.settings.relayConstraints,
                 cachedRelays: cachedRelays
             )
 
@@ -61,10 +61,10 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
         }
     }
 
-    private func didReceiveRelays(tunnelSettings: TunnelSettingsV2, cachedRelays: RelayCache.CachedRelays) {
+    private func createAndStartTunnel(relayConstraints: RelayConstraints, cachedRelays: RelayCache.CachedRelays) {
         let selectorResult = RelaySelector.evaluate(
             relays: cachedRelays.relays,
-            constraints: tunnelSettings.relayConstraints
+            constraints: relayConstraints
         )
 
         guard let selectorResult = selectorResult else {
@@ -76,10 +76,15 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
             self.dispatchQueue.async {
                 switch makeTunnelProviderResult {
                 case .success(let tunnelProvider):
-                    let startTunnelResult = Result { try self.startTunnel(tunnelProvider: tunnelProvider, selectorResult: selectorResult) }
-                        .mapError { error -> TunnelManager.Error in
-                            return .startVPNTunnel(error)
-                        }
+                    let startTunnelResult = Result {
+                        try self.startTunnel(
+                            tunnelProvider: tunnelProvider,
+                            selectorResult: selectorResult
+                        )
+
+                    }.mapError { error -> TunnelManager.Error in
+                        return .systemVPNError(error)
+                    }
 
                     self.finish(completion: OperationCompletion(result: startTunnelResult))
 
@@ -101,8 +106,8 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
 
         encodeErrorHandler = nil
 
-        state.setTunnel(Tunnel(tunnelProvider: tunnelProvider), shouldRefreshTunnelState: false)
-        state.tunnelStatus.reset(to: .connecting(selectorResult.packetTunnelRelay))
+        interactor.setTunnel(Tunnel(tunnelProvider: tunnelProvider), shouldRefreshTunnelState: false)
+        interactor.resetTunnelState(to: .connecting(selectorResult.packetTunnelRelay))
 
         try tunnelProvider.connection.startVPNTunnel(options: tunnelOptions.rawOptions())
     }
@@ -110,7 +115,7 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
     private class func makeTunnelProvider(completionHandler: @escaping (Result<TunnelProviderManagerType, TunnelManager.Error>) -> Void) {
         TunnelProviderManagerType.loadAllFromPreferences { tunnelProviders, error in
             if let error = error {
-                completionHandler(.failure(.loadAllVPNConfigurations(error)))
+                completionHandler(.failure(.systemVPNError(error)))
                 return
             }
 
@@ -131,7 +136,7 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
 
             tunnelProvider.saveToPreferences { error in
                 if let error = error {
-                    completionHandler(.failure(.saveVPNConfiguration(error)))
+                    completionHandler(.failure(.systemVPNError(error)))
                     return
                 }
 
@@ -141,7 +146,7 @@ class StartTunnelOperation: ResultOperation<(), TunnelManager.Error> {
                 // for simplicity as it has no side effects.
                 tunnelProvider.loadFromPreferences { error in
                     if let error = error {
-                        completionHandler(.failure(.reloadVPNConfiguration(error)))
+                        completionHandler(.failure(.systemVPNError(error)))
                     } else {
                         completionHandler(.success(tunnelProvider))
                     }

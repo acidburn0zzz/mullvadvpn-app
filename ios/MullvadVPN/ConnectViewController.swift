@@ -48,7 +48,7 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
     }
 
     var preferredHeaderBarPresentation: HeaderBarPresentation {
-        guard TunnelManager.shared.isAccountSet else {
+        guard TunnelManager.shared.deviceState.isLoggedIn else {
             return HeaderBarPresentation(style: .default, showsDivider: true)
         }
 
@@ -90,7 +90,7 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
         mainContentView.selectLocationButton.addTarget(self, action: #selector(handleSelectLocation(_:)), for: .touchUpInside)
 
         TunnelManager.shared.addObserver(self)
-        self.tunnelState = TunnelManager.shared.tunnelState
+        self.tunnelState = TunnelManager.shared.tunnelStatus.state
 
         addSubviews()
         setupMapView()
@@ -137,8 +137,12 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
         // no-op
     }
 
-    func tunnelManager(_ manager: TunnelManager, didUpdateTunnelSettings tunnelSettings: TunnelSettingsV2?) {
+    func tunnelManager(_ manager: TunnelManager, didUpdateTunnelSettings tunnelSettings: TunnelSettingsV2) {
         setNeedsHeaderBarStyleAppearanceUpdate()
+    }
+
+    func tunnelManager(_ manager: TunnelManager, didUpdateDeviceState deviceState: DeviceState) {
+        // no-op
     }
 
     func tunnelManager(_ manager: TunnelManager, didUpdateTunnelState tunnelState: TunnelState) {

@@ -9,17 +9,17 @@
 import Foundation
 
 class ReloadTunnelOperation: ResultOperation<(), TunnelManager.Error> {
-    private let state: TunnelManager.State
+    private let interactor: TunnelInteractor
     private var task: Cancellable?
 
-    init(dispatchQueue: DispatchQueue, state: TunnelManager.State) {
-        self.state = state
+    init(dispatchQueue: DispatchQueue, interactor: TunnelInteractor) {
+        self.interactor = interactor
 
         super.init(dispatchQueue: dispatchQueue)
     }
 
     override func main() {
-        guard let tunnel = self.state.tunnel else {
+        guard let tunnel = interactor.tunnel else {
             finish(completion: .failure(.unsetTunnel))
             return
         }
@@ -29,7 +29,7 @@ class ReloadTunnelOperation: ResultOperation<(), TunnelManager.Error> {
         task = session.reloadTunnelSettings { [weak self] completion in
             guard let self = self else { return }
 
-            self.finish(completion: completion.mapError { .reloadTunnel($0) })
+            self.finish(completion: completion.mapError { .ipcError($0) })
         }
     }
 

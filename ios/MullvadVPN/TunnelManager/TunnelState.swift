@@ -11,13 +11,13 @@ import Foundation
 /// A struct describing the tunnel status.
 struct TunnelStatus: Equatable, CustomStringConvertible {
     /// Whether netowork is reachable.
-    var isNetworkReachable: Bool
+    var isNetworkReachable: Bool = true
 
     /// When the packet tunnel started connecting.
     var connectingDate: Date?
 
     /// Tunnel state.
-    var state: TunnelState
+    var state: TunnelState = .disconnected
 
     var description: String {
         var s = "\(state), network "

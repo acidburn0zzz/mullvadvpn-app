@@ -27,7 +27,7 @@ class AccountExpiryNotificationProvider: NotificationProvider, SystemNotificatio
 
         super.init()
 
-        accountExpiry = TunnelManager.shared.accountExpiry
+        accountExpiry = TunnelManager.shared.deviceState.accountData?.expiry
         TunnelManager.shared.addObserver(self)
     }
 
@@ -138,8 +138,12 @@ class AccountExpiryNotificationProvider: NotificationProvider, SystemNotificatio
         // no-op
     }
 
-    func tunnelManager(_ manager: TunnelManager, didUpdateTunnelSettings tunnelSettings: TunnelSettingsV2?) {
-        accountExpiry = tunnelSettings?.account.expiry
+    func tunnelManager(_ manager: TunnelManager, didUpdateTunnelSettings tunnelSettings: TunnelSettingsV2) {
+        // no-op
+    }
+
+    func tunnelManager(_ manager: TunnelManager, didUpdateDeviceState deviceState: DeviceState) {
+        accountExpiry = deviceState.accountData?.expiry
         invalidate()
     }
 

@@ -58,97 +58,17 @@ extension REST.Error: DisplayChainedError {
 extension TunnelManager.Error: DisplayChainedError {
     var errorChainDescription: String? {
         switch self {
-        case .loadAllVPNConfigurations(let systemError):
-            return String(
-                format: NSLocalizedString(
-                    "LOAD_ALL_VPN_CONFIGURATIONS_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to load system VPN configurations: %@",
-                    comment: ""
-                ),
-                systemError.localizedDescription
-            )
-        case .reloadVPNConfiguration(let systemError):
-            return String(
-                format: NSLocalizedString(
-                    "RELOAD_VPN_CONFIGURATIONS_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to reload a VPN configuration: %@",
-                    comment: ""
-                ),
-                systemError.localizedDescription
-            )
-        case .saveVPNConfiguration(let systemError):
-            return String(
-                format: NSLocalizedString(
-                    "SAVE_VPN_CONFIGURATION_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to save a VPN tunnel configuration: %@",
-                    comment: ""
-                ),
-                systemError.localizedDescription
-            )
-        case .startVPNTunnel(let systemError):
-            return String(
-                format: NSLocalizedString(
-                    "START_VPN_TUNNEL_ERROR",
-                    tableName: "TunnelManager",
-                    value: "System error when starting the VPN tunnel: %@",
-                    comment: ""
-                ),
-                systemError.localizedDescription
-            )
-        case .removeVPNConfiguration(let systemError):
-            return String(
-                format: NSLocalizedString(
-                    "REMOVE_VPN_CONFIGURATION_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to remove the system VPN configuration: %@",
-                    comment: ""
-                ),
-                systemError.localizedDescription
-            )
-        case .readSettings:
+        case .unsetTunnel:
+            return ""
+
+        case .invalidDeviceState:
             return NSLocalizedString(
-                "READ_TUNNEL_SETTINGS_ERROR",
+                "INVALID_DEVICE_STATE_ERROR",
                 tableName: "TunnelManager",
-                value: "Failed to read settings",
+                value: "Cannot complete the request in such device state.",
                 comment: ""
             )
-        case .writeSettings:
-            return NSLocalizedString(
-                "WRITE_TUNNEL_SETTINGS_ERROR",
-                tableName: "TunnelManager",
-                value: "Failed to write settings",
-                comment: ""
-            )
-        case .deleteSettings:
-            return NSLocalizedString(
-                "DELETE_TUNNEL_SETTINGS_ERROR",
-                tableName: "TunnelManager",
-                value: "Failed to delete settings",
-                comment: ""
-            )
-        case .deleteDevice(let restError):
-            return String(
-                format: NSLocalizedString(
-                    "DELETE_DEVICE_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to create a device: %@",
-                    comment: ""
-                ),
-                restError.errorChainDescription ?? ""
-            )
-        case .getDevice(let restError):
-            return String(
-                format: NSLocalizedString(
-                    "CREATE_DEVICE_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to obtain device data: %@",
-                    comment: ""
-                ),
-                restError.errorChainDescription ?? ""
-            )
+
         case .deviceRevoked:
             return NSLocalizedString(
                 "DEVICE_REVOKED_ERROR",
@@ -156,47 +76,15 @@ extension TunnelManager.Error: DisplayChainedError {
                 value: "Device is revoked.",
                 comment: ""
             )
-        case .createDevice(let restError):
-            return String(
-                format: NSLocalizedString(
-                    "CREATE_DEVICE_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to create a device: %@",
-                    comment: ""
-                ),
-                restError.errorChainDescription ?? ""
-            )
-        case .rotateKey(let restError):
-            return String(
-                format: NSLocalizedString(
-                    "ROTATE_KEY_ERROR",
-                    tableName: "TunnelManager",
-                    value: "Failed to rotate WireGuard key: %@",
-                    comment: ""
-                ),
-                restError.errorChainDescription ?? ""
-            )
-        case .unsetAccount:
+
+        case .relayListUnavailable:
             return NSLocalizedString(
-                "UNSET_ACCOUNT_ERROR",
+                "RELAYLIST_UNAVAILABLE_ERROR",
                 tableName: "TunnelManager",
-                value: "Internal error: account is unset",
+                value: "Relay list is not available.",
                 comment: ""
             )
-        case .unsetTunnel:
-            return NSLocalizedString(
-                "UNSET_TUNNEL_ERROR",
-                tableName: "TunnelManager",
-                value: "Tunnel is unset.",
-                comment: ""
-            )
-        case .readRelays:
-            return NSLocalizedString(
-                "READ_RELAYS_ERROR",
-                tableName: "TunnelManager",
-                value: "Failed to read relays.",
-                comment: ""
-            )
+
         case .cannotSatisfyRelayConstraints:
             return NSLocalizedString(
                 "CANNOT_SATISFY_RELAY_CONSTRAINTS_ERROR",
@@ -204,35 +92,49 @@ extension TunnelManager.Error: DisplayChainedError {
                 value: "Failed to satisfy relay constraints.",
                 comment: ""
             )
-        case .reloadTunnel(let error):
+
+        case .systemVPNError(let systemError):
             return String(
                 format: NSLocalizedString(
-                    "RELOAD_TUNNEL_ERROR",
+                    "SYSTEM_VPN_ERROR",
                     tableName: "TunnelManager",
-                    value: "Failed to reload tunnel: %@",
+                    value: "System VPN error: %@",
+                    comment: ""
+                ),
+                systemError.localizedDescription
+            )
+
+        case .settingsStoreError(let error):
+            return String(
+                format: NSLocalizedString(
+                    "SETTINGS_STORE_ERROR",
+                    tableName: "TunnelManager",
+                    value: "Settings store error: %@",
                     comment: ""
                 ),
                 error.localizedDescription
             )
-        case .getAccountData(let restError):
+
+        case .restError(let restError):
             return String(
                 format: NSLocalizedString(
-                    "GET_ACCOUNT_DATA_ERROR",
+                    "REST_ERROR",
                     tableName: "TunnelManager",
-                    value: "Failed to obtain account data: %@",
+                    value: "REST error: %@",
                     comment: ""
                 ),
-                restError.errorChainDescription ?? ""
+                restError.localizedDescription
             )
-        case .createAccount(let restError):
+
+        case .ipcError(let ipcError):
             return String(
                 format: NSLocalizedString(
-                    "CREATE_ACCOUNT_ERROR",
+                    "IPC_ERROR",
                     tableName: "TunnelManager",
-                    value: "Failed to create new account: %@",
+                    value: "IPC error: %@",
                     comment: ""
                 ),
-                restError.errorChainDescription ?? ""
+                ipcError.localizedDescription
             )
         }
     }

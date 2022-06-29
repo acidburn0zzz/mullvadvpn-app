@@ -16,10 +16,10 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
 
     private var tunnelStatus = PacketTunnelStatus(isNetworkReachable: true, connectingDate: nil, tunnelRelay: nil)
     private let providerLogger = Logger(label: "SimulatorTunnelProviderHost")
-    private let stateQueue = DispatchQueue(label: "SimulatorTunnelProviderHostQueue")
+    private let dispatchQueue = DispatchQueue(label: "SimulatorTunnelProviderHostQueue")
 
     override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
-        stateQueue.async {
+        dispatchQueue.async {
             var selectorResult: RelaySelectorResult?
 
             do {
@@ -44,7 +44,7 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
     }
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
-        stateQueue.async {
+        dispatchQueue.async {
             self.tunnelStatus = PacketTunnelStatus(isNetworkReachable: true, connectingDate: nil, tunnelRelay: nil)
 
             completionHandler()
@@ -52,7 +52,7 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
-        stateQueue.async {
+        dispatchQueue.async {
             let request: TunnelIPC.Request
             do {
                 request = try TunnelIPC.Coding.decodeRequest(messageData)

@@ -11,7 +11,7 @@ import Logging
 import class WireGuardKitTypes.PrivateKey
 
 class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
-    private let state: TunnelManager.State
+    private let interactor: TunnelInteractor
 
     private let devicesProxy: REST.DevicesProxy
     private var task: Cancellable?
@@ -21,31 +21,29 @@ class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
 
     init(
         dispatchQueue: DispatchQueue,
-        state: TunnelManager.State,
+        interactor: TunnelInteractor,
         devicesProxy: REST.DevicesProxy,
-        rotationInterval: TimeInterval?,
-        completionHandler: @escaping CompletionHandler
+        rotationInterval: TimeInterval?
     ) {
-        self.state = state
-
+        self.interactor = interactor
         self.devicesProxy = devicesProxy
         self.rotationInterval = rotationInterval
 
         super.init(
             dispatchQueue: dispatchQueue,
-            completionQueue: dispatchQueue,
-            completionHandler: completionHandler
+            completionQueue: nil,
+            completionHandler: nil
         )
     }
 
     override func main() {
-        guard let tunnelSettings = state.tunnelSettings else {
-            finish(completion: .failure(.unsetAccount))
+        guard case .loggedIn(let accountData, let deviceData) = interactor.deviceState else {
+            finish(completion: .failure(.invalidDeviceState))
             return
         }
 
         if let rotationInterval = rotationInterval {
-            let creationDate = tunnelSettings.device.wgKeyData.creationDate
+            let creationDate = deviceData.wgKeyData.creationDate
             let nextRotationDate = creationDate.addingTimeInterval(rotationInterval)
 
             if nextRotationDate > Date() {
@@ -65,14 +63,13 @@ class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
         let newPrivateKey = PrivateKey()
 
         task = devicesProxy.rotateDeviceKey(
-            accountNumber: tunnelSettings.account.number,
-            identifier: tunnelSettings.device.identifier,
+            accountNumber: accountData.number,
+            identifier: deviceData.identifier,
             publicKey: newPrivateKey.publicKey,
             retryStrategy: .default
         ) { completion in
             self.dispatchQueue.async {
                 self.didRotateKey(
-                    tunnelSettings: tunnelSettings,
                     newPrivateKey: newPrivateKey,
                     completion: completion
                 )
@@ -86,7 +83,6 @@ class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
     }
 
     private func didRotateKey(
-        tunnelSettings: TunnelSettingsV2,
         newPrivateKey: PrivateKey,
         completion: OperationCompletion<REST.Device, REST.Error>
     )
@@ -96,8 +92,7 @@ class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
                 chainedError: error,
                 message: "Failed to rotate device key."
             )
-
-            return .rotateKey(error)
+            return .restError(error)
         }
 
         guard let device = mappedCompletion.value else {
@@ -107,26 +102,19 @@ class RotateKeyOperation: ResultOperation<Bool, TunnelManager.Error> {
 
         logger.debug("Successfully rotated device key. Persisting settings...")
 
-        do {
-            var newTunnelSettings = tunnelSettings
-            newTunnelSettings.device.update(from: device)
-            newTunnelSettings.device.wgKeyData = StoredWgKeyData(
-                creationDate: Date(),
-                privateKey: newPrivateKey
-            )
-
-            try SettingsManager.writeSettings(newTunnelSettings)
-
-            state.tunnelSettings = newTunnelSettings
-
-            finish(completion: .success(true))
-        } catch {
-            logger.error(
-                chainedError: AnyChainedError(error),
-                message: "Failed to write settings."
-            )
-
-            finish(completion: .failure(.writeSettings(error)))
+        guard case .loggedIn(let accountData, var deviceData) = interactor.deviceState else {
+            finish(completion: .failure(.invalidDeviceState))
+            return
         }
+
+        deviceData.update(from: device)
+        deviceData.wgKeyData = StoredWgKeyData(
+            creationDate: Date(),
+            privateKey: newPrivateKey
+        )
+
+        interactor.setDeviceState(.loggedIn(accountData, deviceData), persist: true)
+
+        finish(completion: .success(true))
     }
 }

@@ -305,7 +305,15 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     private func makeConfiguration(_ appSelectorResult: RelaySelectorResult? = nil)
         throws -> PacketTunnelConfiguration
     {
+        let deviceState: DeviceState
         let tunnelSettings: TunnelSettingsV2
+
+        do {
+            deviceState = try SettingsManager.readDeviceState()
+        } catch {
+            throw PacketTunnelProviderError.readDeviceState(error)
+        }
+
         do {
             tunnelSettings = try SettingsManager.readSettings()
         } catch {
@@ -318,6 +326,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             )
 
         return PacketTunnelConfiguration(
+            deviceState: deviceState,
             tunnelSettings: tunnelSettings,
             selectorResult: selectorResult
         )
@@ -438,6 +447,9 @@ enum PacketTunnelProviderError: ChainedError {
     /// Failure to satisfy the relay constraint.
     case noRelaySatisfyingConstraint
 
+    /// Failure to read device state from keychain.
+    case readDeviceState(Error)
+
     /// Failure to read settings from keychain.
     case readSettings(Error)
 
@@ -458,6 +470,9 @@ enum PacketTunnelProviderError: ChainedError {
         case .noRelaySatisfyingConstraint:
             return "No relay satisfying the given constraint."
 
+        case .readDeviceState:
+            return "Failure to read device state."
+
         case .readSettings:
             return "Failure to read settings."
 
@@ -474,6 +489,7 @@ enum PacketTunnelProviderError: ChainedError {
 }
 
 struct PacketTunnelConfiguration {
+    var deviceState: DeviceState
     var tunnelSettings: TunnelSettingsV2
     var selectorResult: RelaySelectorResult
 }
@@ -497,15 +513,19 @@ extension PacketTunnelConfiguration {
             return peerConfig
         }
 
-        var interfaceConfig = InterfaceConfiguration(
-            privateKey: tunnelSettings.device.wgKeyData.privateKey
-        )
+        var interfaceConfig: InterfaceConfiguration
+
+        switch deviceState {
+        case .loggedIn(_, let device):
+            interfaceConfig = InterfaceConfiguration(privateKey: device.wgKeyData.privateKey)
+            interfaceConfig.addresses = [device.ipv4Address, device.ipv6Address]
+            interfaceConfig.dns = dnsServers.map { DNSServer(address: $0) }
+
+        case .loggedOut, .revoked:
+            interfaceConfig = InterfaceConfiguration(privateKey: PrivateKey())
+        }
+
         interfaceConfig.listenPort = 0
-        interfaceConfig.dns = dnsServers.map { DNSServer(address: $0) }
-        interfaceConfig.addresses = [
-            tunnelSettings.device.ipv4Address,
-            tunnelSettings.device.ipv6Address
-        ]
 
         return TunnelConfiguration(name: nil, interface: interfaceConfig, peers: peerConfigs)
     }
