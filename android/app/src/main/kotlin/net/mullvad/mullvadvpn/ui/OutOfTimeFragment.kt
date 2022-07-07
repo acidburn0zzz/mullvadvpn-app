@@ -21,6 +21,7 @@ import net.mullvad.mullvadvpn.ui.widget.Button
 import net.mullvad.mullvadvpn.ui.widget.HeaderBar
 import net.mullvad.mullvadvpn.ui.widget.RedeemVoucherButton
 import net.mullvad.mullvadvpn.ui.widget.SitePaymentButton
+import net.mullvad.mullvadvpn.util.openAccountPageInBrowser
 import net.mullvad.talpid.tunnel.ActionAfterDisconnect
 import net.mullvad.talpid.tunnel.ErrorStateCause
 import org.joda.time.DateTime
@@ -68,7 +69,12 @@ class OutOfTimeFragment : ServiceDependentFragment(OnNoService.GoToLaunchScreen)
 
         sitePaymentButton = view.findViewById<SitePaymentButton>(R.id.site_payment).apply {
             newAccount = false
-            prepare(authTokenCache, jobTracker)
+
+            setOnClickAction("openAccountPageInBrowser", jobTracker) {
+                setEnabled(false)
+                context.openAccountPageInBrowser(authTokenCache.fetchAuthToken())
+                setEnabled(true)
+            }
         }
 
         redeemButton = view.findViewById<RedeemVoucherButton>(R.id.redeem_voucher).apply {
@@ -95,12 +101,10 @@ class OutOfTimeFragment : ServiceDependentFragment(OnNoService.GoToLaunchScreen)
                 delay(POLL_INTERVAL)
             }
         }
-
-        sitePaymentButton.updateAuthTokenCache(authTokenCache)
     }
 
     override fun onSafelyStop() {
-        jobTracker.cancelJob("pollAccountData")
+        jobTracker.cancelAllJobs()
     }
 
     override fun onSafelyDestroyView() {

@@ -23,6 +23,7 @@ import net.mullvad.mullvadvpn.ui.widget.InformationView
 import net.mullvad.mullvadvpn.ui.widget.RedeemVoucherButton
 import net.mullvad.mullvadvpn.ui.widget.SitePaymentButton
 import net.mullvad.mullvadvpn.util.capitalizeFirstCharOfEachWord
+import net.mullvad.mullvadvpn.util.openAccountPageInBrowser
 import net.mullvad.talpid.tunnel.ErrorStateCause
 import org.joda.time.DateTime
 import org.koin.android.ext.android.inject
@@ -85,8 +86,10 @@ class AccountFragment : ServiceDependentFragment(OnNoService.GoBack) {
         sitePaymentButton = view.findViewById<SitePaymentButton>(R.id.site_payment).apply {
             newAccount = false
 
-            prepare(authTokenCache, jobTracker) {
-                checkForAddedTime()
+            setOnClickAction("openAccountPageInBrowser", jobTracker) {
+                setEnabled(false)
+                context.openAccountPageInBrowser(authTokenCache.fetchAuthToken())
+                setEnabled(true)
             }
         }
 
@@ -123,8 +126,6 @@ class AccountFragment : ServiceDependentFragment(OnNoService.GoBack) {
                     uiState.errorState.cause is ErrorStateCause.IsOffline
             }
         }
-
-        sitePaymentButton.updateAuthTokenCache(authTokenCache)
     }
 
     override fun onSafelyStop() {
