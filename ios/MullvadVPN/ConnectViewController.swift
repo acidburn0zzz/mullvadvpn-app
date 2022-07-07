@@ -48,16 +48,14 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
     }
 
     var preferredHeaderBarPresentation: HeaderBarPresentation {
-        guard TunnelManager.shared.deviceState.isLoggedIn else {
+        switch TunnelManager.shared.deviceState {
+        case .loggedIn, .revoked:
+            return HeaderBarPresentation(
+                style: tunnelState.isSecured ? .secured : .unsecured,
+                showsDivider: false
+            )
+        case .loggedOut:
             return HeaderBarPresentation(style: .default, showsDivider: true)
-        }
-
-        switch tunnelState {
-        case .connecting, .reconnecting, .connected:
-            return HeaderBarPresentation(style: .secured, showsDivider: false)
-
-        case .disconnecting, .disconnected, .pendingReconnect:
-            return HeaderBarPresentation(style: .unsecured, showsDivider: false)
         }
     }
 
