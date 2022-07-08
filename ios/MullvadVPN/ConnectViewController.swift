@@ -397,7 +397,7 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
             let view = mapView.dequeueReusableAnnotationView(withIdentifier: "location", for: annotation)
             view.isDraggable = false
             view.canShowCallout = false
-            view.image = self.locationMarkerSecureImage
+            view.image = UIImage(named: "LocationMarkerSecure")
             return view
         }
         return nil
@@ -409,10 +409,6 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
     }
 
     // MARK: - Private
-
-    private var locationMarkerSecureImage: UIImage {
-        return UIImage(named: "LocationMarkerSecure")!
-    }
 
     private func setupMapView() {
         mainContentView.mapView.insetsLayoutMarginsFromSafeArea = false
