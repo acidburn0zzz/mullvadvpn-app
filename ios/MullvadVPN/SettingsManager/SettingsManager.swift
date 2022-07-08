@@ -182,55 +182,6 @@ extension SettingsManager {
         ]
     }
 
-    // MARK: - Consistency checks
-
-    static func checkIntegrity() {
-        for item in Item.allCases {
-            var query = Self.createDefaultAttributes(item: item)
-            query[kSecReturnAttributes] = true
-
-            var result: CFTypeRef?
-            let status = SecItemCopyMatching(query as CFDictionary, &result)
-            if status == errSecSuccess {
-                guard let attributes = result as? [CFString: Any] else {
-                    logger.debug("checkIntegrity(): unable to cast result (CFTypeRef) to [CFString: Any]")
-                    continue
-                }
-
-                let accessAttributes = createAccessAttributes()
-                let attributesSubset = attributes.filter { key, _ in
-                    return accessAttributes.keys.contains(key)
-                }
-
-                if !(attributesSubset as NSDictionary).isEqual(to: accessAttributes) {
-                    logger.debug("Fixing attributes for Keychain item: \(item.rawValue)")
-                    query.removeValue(forKey: kSecReturnAttributes)
-
-                    let updateStatus = SecItemUpdate(
-                        query as CFDictionary,
-                        accessAttributes as CFDictionary
-                    )
-
-                    if updateStatus != errSecSuccess {
-                        let error = KeychainError(code: status)
-
-                        logger.error(
-                            chainedError: AnyChainedError(error),
-                            message: "Failed to fix attributes for item \(item.rawValue)."
-                        )
-                    }
-                }
-            } else if status != errSecItemNotFound {
-                let error = KeychainError(code: status)
-
-                logger.error(
-                    chainedError: AnyChainedError(error),
-                    message: "Failed to decode legacy settings."
-                )
-            }
-        }
-    }
-
     // MARK: - Legacy settings support
 
     private static let logger = Logger(label: "SettingsManager")

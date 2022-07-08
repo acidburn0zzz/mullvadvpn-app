@@ -247,9 +247,6 @@ class MigrateSettingsOperation: AsyncOperation {
         userDefaults.removeObject(forKey: accountTokenKey)
         userDefaults.removeObject(forKey: accountExpiryKey)
 
-        logger.debug("Check settings store integrity.")
-        SettingsManager.checkIntegrity()
-
         finish()
     }
 

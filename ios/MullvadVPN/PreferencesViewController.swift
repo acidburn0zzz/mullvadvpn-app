@@ -11,8 +11,6 @@ import Logging
 
 class PreferencesViewController: UITableViewController, PreferencesDataSourceDelegate, TunnelObserver {
 
-    private let logger = Logger(label: "PreferencesViewController")
-
     private let dataSource = PreferencesDataSource()
 
     override var preferredStatusBarStyle: UIStatusBarStyle {

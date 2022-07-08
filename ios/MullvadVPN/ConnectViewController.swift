@@ -36,8 +36,6 @@ class ConnectViewController: UIViewController, MKMapViewDelegate, RootContainmen
         return view
     }()
 
-    private let logger = Logger(label: "ConnectViewController")
-
     private var lastLocation: CLLocationCoordinate2D?
     private let locationMarker = MKPointAnnotation()
 

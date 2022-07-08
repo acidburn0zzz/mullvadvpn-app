@@ -11,8 +11,6 @@ import Logging
 import class WireGuardKitTypes.PublicKey
 
 class UpdateDeviceDataOperation: ResultOperation<StoredDeviceData, TunnelManager.Error> {
-    private let logger = Logger(label: "UpdateDeviceDataOperation")
-
     private let interactor: TunnelInteractor
     private let devicesProxy: REST.DevicesProxy
 

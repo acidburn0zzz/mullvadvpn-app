@@ -420,7 +420,7 @@ extension LoginViewController: AccountInputGroupViewDelegate {
             try SettingsManager.setLastUsedAccount(nil)
             return true
         } catch {
-            self.logger.error(chainedError: AnyChainedError(error),
+            logger.error(chainedError: AnyChainedError(error),
                               message: "Failed to remove last used account.")
             return false
         }

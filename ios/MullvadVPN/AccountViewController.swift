@@ -25,7 +25,6 @@ class AccountViewController: UIViewController, AppStorePaymentObserver, TunnelOb
 
     private var pendingPayment: SKPayment?
     private let alertPresenter = AlertPresenter()
-    private let logger = Logger(label: "AccountViewController")
 
     weak var delegate: AccountViewControllerDelegate?
 
