@@ -91,14 +91,14 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
         do {
             let tunnelSettings = try SettingsManager.readSettings()
 
-            return RelaySelector.evaluate(
+            return try RelaySelector.evaluate(
                 relays: cachedRelays.relays,
                 constraints: tunnelSettings.relayConstraints
             )
         } catch {
             providerLogger.error(
                 chainedError: AnyChainedError(error),
-                message: "Failed to read settings when picking relay."
+                message: "Failed to pick relay."
             )
             return nil
         }
