@@ -271,9 +271,6 @@ final class TunnelManager {
         let operation = StartTunnelOperation(
             dispatchQueue: internalQueue,
             interactor: TunnelInteractorProxy(self),
-            encodeErrorHandler: { [weak self] error in
-                self?.logger.error(chainedError: AnyChainedError(error), message: "Failed to encode tunnel options")
-            },
             completionHandler: { [weak self] completion in
                 if case .failure(let error) = completion {
                     self?.logger.error(chainedError: error, message: "Failed to start the tunnel.")
