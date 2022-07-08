@@ -52,43 +52,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         setupPaymentHandler()
         setupNotificationHandler()
 
-        let setupTunnelManagerOperation = AsyncBlockOperation(dispatchQueue: .main) { blockOperation in
+        let setupTunnelManagerOperation = AsyncBlockOperation(dispatchQueue: .main) { operation in
             TunnelManager.shared.loadConfiguration { error in
-                dispatchPrecondition(condition: .onQueue(.main))
-
+                // TODO: avoid throwing fatal error and show the problem report UI instead.
                 if let error = error {
-                    self.logger.error(chainedError: error, message: "Failed to load tunnels")
-
-                    // TODO: avoid throwing fatal error and show the problem report UI instead.
                     fatalError(
-                        error.displayChain(message: "Failed to load VPN tunnel configuration")
+                        error.displayChain(message: "Failed to load tunnel configuration.")
                     )
                 }
 
-                blockOperation.finish()
+                self.logger.debug("Finished initialization.")
+
+                NotificationManager.shared.updateNotifications()
+                AppStorePaymentManager.shared.startPaymentQueueMonitoring()
+
+                operation.finish()
             }
         }
 
-        let setupUIOperation = AsyncBlockOperation(dispatchQueue: .main) {
-            self.logger.debug("Finished initialization.")
-
-            NotificationManager.shared.updateNotifications()
-            AppStorePaymentManager.shared.startPaymentQueueMonitoring()
-        }
-
-        operationQueue.addOperations([
-            setupTunnelManagerOperation,
-            setupUIOperation
-        ], waitUntilFinished: false)
+        operationQueue.addOperation(setupTunnelManagerOperation)
 
         if #available(iOS 13, *) {
-            return true
+            // no-op
         } else {
             sceneDelegate = SceneDelegate()
             sceneDelegate?.setupScene(windowFactory: ClassicWindowFactory())
-
-            return true
         }
+
+        return true
     }
 
     func application(

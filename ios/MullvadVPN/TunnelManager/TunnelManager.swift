@@ -229,7 +229,10 @@ final class TunnelManager {
             guard let self = self else { return }
 
             if case .failure(let error) = completion {
-                self.logger.error(chainedError: error, message: "Failed to load tunnel.")
+                self.logger.error(
+                    chainedError: error,
+                    message: "Failed to load configuration."
+                )
             }
 
             self.updatePrivateKeyRotationTimer()
