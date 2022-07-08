@@ -336,10 +336,8 @@ final class TunnelManager {
             interactor: TunnelInteractorProxy(self),
             accountsProxy: accountsProxy,
             devicesProxy: devicesProxy,
-            action: action,
-            willDeleteVPNConfigurationHandler: { [weak self] in
-                self?.prepareForVPNConfigurationDeletion()
-            })
+            action: action
+        )
 
         operation.completionQueue = .main
         operation.completionHandler = { [weak self] completion in
@@ -693,7 +691,7 @@ final class TunnelManager {
 
     // MARK: - Private methods
 
-    private func prepareForVPNConfigurationDeletion() {
+    fileprivate func prepareForVPNConfigurationDeletion() {
         nslock.lock()
         defer { nslock.unlock() }
 
@@ -1027,6 +1025,10 @@ private struct TunnelInteractorProxy: TunnelInteractor {
 
     func startTunnel() {
         tunnelManager.startTunnel()
+    }
+
+    func prepareForVPNConfigurationDeletion() {
+        tunnelManager.prepareForVPNConfigurationDeletion()
     }
 
 }

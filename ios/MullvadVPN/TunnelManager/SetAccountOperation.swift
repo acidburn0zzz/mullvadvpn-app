@@ -60,13 +60,10 @@ private struct SetAccountContext: OperationInputContext {
 }
 
 class SetAccountOperation: ResultOperation<StoredAccountData?, TunnelManager.Error> {
-    typealias WillDeleteVPNConfigurationHandler = () -> Void
-
     private let interactor: TunnelInteractor
     private let accountsProxy: REST.AccountsProxy
     private let devicesProxy: REST.DevicesProxy
     private let action: SetAccountAction
-    private var willDeleteVPNConfigurationHandler: WillDeleteVPNConfigurationHandler?
 
     private let logger = Logger(label: "SetAccountOperation")
     private let operationQueue = AsyncOperationQueue()
@@ -78,15 +75,13 @@ class SetAccountOperation: ResultOperation<StoredAccountData?, TunnelManager.Err
         interactor: TunnelInteractor,
         accountsProxy: REST.AccountsProxy,
         devicesProxy: REST.DevicesProxy,
-        action: SetAccountAction,
-        willDeleteVPNConfigurationHandler: @escaping WillDeleteVPNConfigurationHandler
+        action: SetAccountAction
     )
     {
         self.interactor = interactor
         self.accountsProxy = accountsProxy
         self.devicesProxy = devicesProxy
         self.action = action
-        self.willDeleteVPNConfigurationHandler = willDeleteVPNConfigurationHandler
 
         super.init(dispatchQueue: dispatchQueue)
     }
@@ -342,8 +337,7 @@ class SetAccountOperation: ResultOperation<StoredAccountData?, TunnelManager.Err
     private func getDeleteSettingsOperation() -> AsyncBlockOperation {
         return AsyncBlockOperation(dispatchQueue: dispatchQueue) { operation in
             // Tell the caller to unsubscribe from VPN status notifications.
-            self.willDeleteVPNConfigurationHandler?()
-            self.willDeleteVPNConfigurationHandler = nil
+            self.interactor.prepareForVPNConfigurationDeletion()
 
             // Reset tunnel and device state.
             self.interactor.resetTunnelState(to: .disconnected)

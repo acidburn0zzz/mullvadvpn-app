@@ -41,4 +41,5 @@ protocol TunnelInteractor {
     func setDeviceState(_ deviceState: DeviceState, persist: Bool)
 
     func startTunnel()
+    func prepareForVPNConfigurationDeletion()
 }
