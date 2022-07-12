@@ -128,7 +128,7 @@ extension AddressCache {
             defer { nslock.unlock() }
 
             guard !endpoints.isEmpty else {
-                throw StoreError.emptyAddressList
+                return
             }
 
             if Set(cachedAddresses.endpoints) == Set(endpoints) {
@@ -221,24 +221,18 @@ extension AddressCache {
                     chainedError: AnyChainedError(error),
                     message: "Failed to read address cache from disk. Fallback to pre-bundled cache."
                 )
-            }
 
-            return ReadResult(
-                cachedAddresses: try readFromBundle(),
-                source: .bundle
-            )
+                return ReadResult(
+                    cachedAddresses: try readFromBundle(),
+                    source: .bundle
+                )
+            }
         }
 
         private func readFromCacheLocation() throws -> CachedAddresses {
-            do {
-                let data = try Data(contentsOf: cacheFileURL)
+            let data = try Data(contentsOf: cacheFileURL)
 
-                return try JSONDecoder().decode(CachedAddresses.self, from: data)
-            } catch let error as DecodingError {
-                throw StoreError.decodeCache(error)
-            } catch {
-                throw StoreError.readCache(error)
-            }
+            return try JSONDecoder().decode(CachedAddresses.self, from: data)
         }
 
         private func writeToDisk() throws {
@@ -250,30 +244,18 @@ extension AddressCache {
                 attributes: nil
             )
 
-            do {
-                let data = try JSONEncoder().encode(cachedAddresses)
-                try data.write(to: cacheFileURL, options: .atomic)
-            } catch let error as EncodingError {
-                throw StoreError.encodeCache(error)
-            } catch {
-                throw StoreError.writeCache(error)
-            }
+            let data = try JSONEncoder().encode(cachedAddresses)
+            try data.write(to: cacheFileURL, options: .atomic)
         }
 
         private func readFromBundle() throws -> CachedAddresses {
-            do {
-                let data = try Data(contentsOf: prebundledCacheFileURL)
-                let endpoints = try JSONDecoder().decode([AnyIPEndpoint].self, from: data)
+            let data = try Data(contentsOf: prebundledCacheFileURL)
+            let endpoints = try JSONDecoder().decode([AnyIPEndpoint].self, from: data)
 
-                return CachedAddresses(
-                    updatedAt: Date(timeIntervalSince1970: 0),
-                    endpoints: endpoints
-                )
-            } catch let error as DecodingError {
-                throw StoreError.decodeCacheFromBundle(error)
-            } catch {
-                throw StoreError.decodeCacheFromBundle(error)
-            }
+            return CachedAddresses(
+                updatedAt: Date(timeIntervalSince1970: 0),
+                endpoints: endpoints
+            )
         }
 
     }
