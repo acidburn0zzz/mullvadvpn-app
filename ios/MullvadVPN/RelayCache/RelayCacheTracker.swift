@@ -134,11 +134,11 @@ extension RelayCache {
 
         func updateRelays(
             completionHandler: (
-                (OperationCompletion<RelayCache.FetchResult, RelayCache.Error>) -> Void
+                (OperationCompletion<RelayCache.FetchResult, Error>) -> Void
             )? = nil
         ) -> Cancellable
         {
-            let operation = ResultBlockOperation<RelayCache.FetchResult, RelayCache.Error>(
+            let operation = ResultBlockOperation<RelayCache.FetchResult, Error>(
                 dispatchQueue: nil
             ) { operation in
                 let cachedRelays = self.getCachedRelays()
@@ -214,28 +214,23 @@ extension RelayCache {
 
         private func handleResponse(
             completion: OperationCompletion<REST.ServerRelaysCacheResponse, REST.Error>
-        ) -> OperationCompletion<FetchResult, RelayCache.Error>
+        ) -> OperationCompletion<FetchResult, Error>
         {
-            let mappedCompletion = completion
-                .mapError { error -> RelayCache.Error in
-                    return .rest(error)
-                }
-                .tryMap { response -> FetchResult in
-                    switch response {
-                    case .newContent(let etag, let relays):
-                        try self.storeResponse(etag: etag, relays: relays)
+            let mappedCompletion = completion.tryMap { response -> FetchResult in
+                switch response {
+                case .newContent(let etag, let relays):
+                    try self.storeResponse(etag: etag, relays: relays)
 
-                        return .newContent
+                    return .newContent
 
-                    case .notModified:
-                        return .sameContent
-                    }
+                case .notModified:
+                    return .sameContent
                 }
-                .assertFailure(RelayCache.Error.self)
+            }
 
             if let error = mappedCompletion.error {
                 logger.error(
-                    chainedError: error,
+                    chainedError: AnyChainedError(error),
                     message: "Failed to update relays."
                 )
             }
@@ -258,23 +253,15 @@ extension RelayCache {
             cachedRelays = newCachedRelays
             nslock.unlock()
 
+            try RelayCache.IO.write(
+                cacheFileURL: cacheFileURL,
+                record: newCachedRelays
+            )
+
             DispatchQueue.main.async {
                 self.observerList.forEach { observer in
                     observer.relayCache(self, didUpdateCachedRelays: newCachedRelays)
                 }
-            }
-
-            do {
-                try RelayCache.IO.write(
-                    cacheFileURL: cacheFileURL,
-                    record: newCachedRelays
-                )
-            } catch {
-                logger.error(
-                    chainedError: AnyChainedError(error),
-                    message: "Failed to store downloaded relays."
-                )
-                throw error
             }
         }
 
