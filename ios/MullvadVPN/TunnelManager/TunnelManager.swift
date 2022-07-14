@@ -798,12 +798,18 @@ final class TunnelManager {
     )
     {
         let operation = AsyncBlockOperation(dispatchQueue: internalQueue) {
-            var settings = self._tunnelSettings
+            let currentSettings = self._tunnelSettings
+            var updatedSettings = self._tunnelSettings
 
-            modificationBlock(&settings)
+            modificationBlock(&updatedSettings)
 
-            self.setSettings(settings, persist: true)
-            self.reconnectTunnel(selectNewRelay: true, completionHandler: nil)
+            // Select new relay only when relay constraints change.
+            let currentConstraints = currentSettings.relayConstraints
+            let updatedConstraints = updatedSettings.relayConstraints
+            let selectNewRelay = currentConstraints != updatedConstraints
+
+            self.setSettings(updatedSettings, persist: true)
+            self.reconnectTunnel(selectNewRelay: selectNewRelay, completionHandler: nil)
         }
 
         operation.completionBlock = {
