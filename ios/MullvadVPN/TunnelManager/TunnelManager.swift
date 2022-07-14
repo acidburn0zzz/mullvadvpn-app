@@ -304,10 +304,15 @@ final class TunnelManager {
         operationQueue.addOperation(operation)
     }
 
-    func reconnectTunnel(completionHandler: ((OperationCompletion<(), TunnelManager.Error>) -> Void)? = nil) {
-        let operation = ReloadTunnelOperation(
+    func reconnectTunnel(
+        selectNewRelay: Bool,
+        completionHandler: ((OperationCompletion<(), TunnelManager.Error>) -> Void)? = nil
+    )
+    {
+        let operation = ReconnectTunnelOperation(
             dispatchQueue: internalQueue,
-            interactor: TunnelInteractorProxy(self)
+            interactor: TunnelInteractorProxy(self),
+            selectNewRelay: selectNewRelay
         )
 
         operation.completionQueue = .main
@@ -439,7 +444,7 @@ final class TunnelManager {
 
             switch completion {
             case .success:
-                self.reconnectTunnel { _ in
+                self.reconnectTunnel(selectNewRelay: false) { _ in
                     completionHandler(completion)
                 }
 
@@ -798,7 +803,7 @@ final class TunnelManager {
             modificationBlock(&settings)
 
             self.setSettings(settings, persist: true)
-            self.reconnectTunnel(completionHandler: nil)
+            self.reconnectTunnel(selectNewRelay: true, completionHandler: nil)
         }
 
         operation.completionBlock = {
@@ -827,7 +832,7 @@ final class TunnelManager {
             modificationBlock(&deviceState)
 
             self.setDeviceState(deviceState, persist: true)
-            self.reconnectTunnel(completionHandler: nil)
+            self.reconnectTunnel(selectNewRelay: false, completionHandler: nil)
         }
 
         operation.completionBlock = {

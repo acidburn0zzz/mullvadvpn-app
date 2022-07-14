@@ -72,9 +72,10 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
                     self.providerLogger.error(chainedError: AnyChainedError(error), message: "Failed to encode tunnel status IPC response.")
                 }
 
-            case .reloadTunnelSettings:
+            case .reconnectTunnel(let inputSelectorResult):
                 self.reasserting = true
-                self.tunnelStatus.tunnelRelay = self.pickRelay()?.packetTunnelRelay
+                let selectorResult = inputSelectorResult ?? self.pickRelay()
+                self.tunnelStatus.tunnelRelay = selectorResult?.packetTunnelRelay
                 self.reasserting = false
             }
 

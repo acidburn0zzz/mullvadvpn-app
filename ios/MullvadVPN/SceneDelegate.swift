@@ -211,7 +211,7 @@ extension SceneDelegate: RootContainerViewControllerDelegate {
 
         switch TunnelManager.shared.tunnelStatus.state {
         case .connected, .connecting, .reconnecting:
-            TunnelManager.shared.reconnectTunnel()
+            TunnelManager.shared.reconnectTunnel(selectNewRelay: true)
         case .disconnecting, .disconnected:
             TunnelManager.shared.startTunnel()
         case .pendingReconnect:

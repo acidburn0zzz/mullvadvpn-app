@@ -13,6 +13,8 @@ extension TunnelIPC {
     /// Wrapper class around `NETunnelProviderSession` that provides convenient interface for
     /// interacting with the Packet Tunnel process.
     final class Session {
+        typealias CompletionHandler<T> = (OperationCompletion<T, TunnelIPC.Error>) -> Void
+
         private let tunnel: Tunnel
         private let queue = DispatchQueue(label: "TunnelIPC.SessionQueue")
         private let operationQueue = AsyncOperationQueue()
@@ -21,11 +23,15 @@ extension TunnelIPC {
             self.tunnel = tunnel
         }
 
-        func reloadTunnelSettings(completionHandler: @escaping (OperationCompletion<(), TunnelIPC.Error>) -> Void) -> Cancellable {
+        func reconnectTunnel(
+            relaySelectorResult: RelaySelectorResult?,
+            completionHandler: @escaping CompletionHandler<Void>
+        ) -> Cancellable
+        {
             let operation = RequestOperation(
                 dispatchQueue: queue,
                 tunnel: tunnel,
-                request: .reloadTunnelSettings,
+                request: .reconnectTunnel(relaySelectorResult),
                 options: TunnelIPC.RequestOptions(),
                 completionHandler: completionHandler
             )
@@ -35,8 +41,10 @@ extension TunnelIPC {
             return operation
         }
 
-        func getTunnelStatus(completionHandler: @escaping (OperationCompletion<PacketTunnelStatus, TunnelIPC.Error>) -> Void) -> Cancellable {
-            let operation = RequestOperation<PacketTunnelStatus>(
+        func getTunnelStatus(completionHandler: @escaping CompletionHandler<PacketTunnelStatus>)
+            -> Cancellable
+        {
+            let operation = RequestOperation(
                 dispatchQueue: queue,
                 tunnel: tunnel,
                 request: .getTunnelStatus,

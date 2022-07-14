@@ -43,6 +43,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     /// Tunnel status.
     private var tunnelStatus = PacketTunnelStatus()
 
+    /// Last relay selector result.
+    private var selectorResult: RelaySelectorResult?
+
     override init() {
         let pid = ProcessInfo.processInfo.processIdentifier
 
@@ -76,7 +79,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
             switch appSelectorResult {
             case .some(let selectorResult):
-                providerLogger.debug("Start the tunnel via app, connect to \(selectorResult.relay.hostname).")
+                providerLogger.debug(
+                    "Start the tunnel via app, connect to \(selectorResult.relay.hostname)."
+                )
 
             case .none:
                 if tunnelOptions.isOnDemand() {
@@ -89,7 +94,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             providerLogger.debug("Start the tunnel via app.")
             providerLogger.error(
                 chainedError: AnyChainedError(error),
-                message: "Failed to decode relay selector result passed from the app. Will continue by picking new relay."
+                message: """
+                         Failed to decode relay selector result passed from the app. \
+                         Will continue by picking new relay.
+                         """
             )
         }
 
@@ -111,6 +119,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         dispatchQueue.async {
             let tunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
             self.tunnelStatus.tunnelRelay = tunnelRelay
+            self.selectorResult = tunnelConfiguration.selectorResult
             self.providerLogger.debug("Set tunnel relay to \(tunnelRelay.hostname).")
         }
 
@@ -178,7 +187,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             do {
                 request = try TunnelIPC.Coding.decodeRequest(messageData)
             } catch {
-                self.providerLogger.error(chainedError: AnyChainedError(error), message: "Failed to decode the app message request.")
+                self.providerLogger.error(
+                    chainedError: AnyChainedError(error),
+                    message: "Failed to decode the app message request."
+                )
 
                 completionHandler?(nil)
                 return
@@ -187,19 +199,19 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             self.providerLogger.debug("Received app message: \(request)")
 
             switch request {
-            case .reloadTunnelSettings:
-                self.providerLogger.debug("Reloading tunnel settings...")
+            case .reconnectTunnel(let appSelectorResult):
+                self.providerLogger.debug("Reconnecting the tunnel...")
 
-                self.reloadTunnelSettings { [weak self] error in
+                self.reconnectTunnel(selectorResult: appSelectorResult) { [weak self] error in
                     guard let self = self else { return }
 
                     if let error = error {
                         self.providerLogger.error(
                             chainedError: AnyChainedError(error),
-                            message: "Failed to reload tunnel settings."
+                            message: "Failed to reconnect the tunnel."
                         )
                     } else {
-                        self.providerLogger.debug("Reloaded tunnel settings.")
+                        self.providerLogger.debug("Reconnected the tunnel.")
                     }
                 }
 
@@ -210,7 +222,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
                 do {
                     response = try TunnelIPC.Coding.encodeResponse(self.tunnelStatus)
                 } catch {
-                    self.providerLogger.error(chainedError: AnyChainedError(error), message: "Failed to encode the app message response for \(request)")
+                    self.providerLogger.error(
+                        chainedError: AnyChainedError(error),
+                        message: "Failed to encode the app message response for \(request)"
+                    )
                 }
 
                 completionHandler?(response)
@@ -277,6 +292,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         // Update tunnel status.
         let tunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
         tunnelStatus.tunnelRelay = tunnelRelay
+        selectorResult = tunnelConfiguration.selectorResult
         providerLogger.debug("Set tunnel relay to \(tunnelRelay.hostname).")
 
         // Update WireGuard configuration.
@@ -289,7 +305,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         }
     }
 
-    func tunnelMonitor(_ tunnelMonitor: TunnelMonitor, networkReachabilityStatusDidChange isNetworkReachable: Bool) {
+    func tunnelMonitor(
+        _ tunnelMonitor: TunnelMonitor,
+        networkReachabilityStatusDidChange isNetworkReachable: Bool
+    )
+    {
         tunnelStatus.isNetworkReachable = isNetworkReachable
 
         // Adjust the start reconnect date if tunnel monitor re-started pinging in response to
@@ -306,10 +326,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     {
         let deviceState = try SettingsManager.readDeviceState()
         let tunnelSettings = try SettingsManager.readSettings()
-        let selectorResult = try appSelectorResult
-            ?? Self.selectRelayEndpoint(
-                relayConstraints: tunnelSettings.relayConstraints
-            )
+        let selectorResult = try appSelectorResult ?? Self.selectRelayEndpoint(
+            relayConstraints: tunnelSettings.relayConstraints
+        )
 
         return PacketTunnelConfiguration(
             deviceState: deviceState,
@@ -318,25 +337,31 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         )
     }
 
-    private func reloadTunnelSettings(completionHandler: @escaping (Error?) -> Void) {
+    private func reconnectTunnel(
+        selectorResult inputSelectorResult: RelaySelectorResult?,
+        completionHandler: @escaping (Error?) -> Void
+    )
+    {
         dispatchPrecondition(condition: .onQueue(dispatchQueue))
 
         // Read tunnel configuration.
         let tunnelConfiguration: PacketTunnelConfiguration
         do {
-            tunnelConfiguration = try makeConfiguration(nil)
+            tunnelConfiguration = try makeConfiguration(inputSelectorResult ?? selectorResult)
         } catch {
             completionHandler(error)
             return
         }
 
         // Copy old relay.
+        let oldSelectorResult = selectorResult
         let oldTunnelRelay = tunnelStatus.tunnelRelay
         let newTunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
 
         // Update tunnel status.
         tunnelStatus.tunnelRelay = newTunnelRelay
         tunnelStatus.connectingDate = nil
+        selectorResult = tunnelConfiguration.selectorResult
 
         providerLogger.debug("Set tunnel relay to \(newTunnelRelay.hostname).")
 
@@ -357,7 +382,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
                 if let error = error {
                     // Revert to previously used tunnel relay.
                     self.tunnelStatus.tunnelRelay = oldTunnelRelay
-                    self.providerLogger.debug("Reset tunnel relay to \(oldTunnelRelay?.hostname ?? "none").")
+                    self.selectorResult = oldSelectorResult
+                    self.providerLogger.debug(
+                        "Reset tunnel relay to \(oldTunnelRelay?.hostname ?? "none")."
+                    )
 
                     // Lower the reasserting flag.
                     if self.isConnected {
@@ -432,7 +460,7 @@ extension PacketTunnelConfiguration {
         }
 
         let peerConfigs = peers.compactMap { (endpoint) -> PeerConfiguration in
-            let pubKey = PublicKey(rawValue: selectorResult.endpoint.publicKey)!
+            let pubKey = PublicKey(rawValue: mullvadEndpoint.publicKey)!
             var peerConfig = PeerConfiguration(publicKey: pubKey)
             peerConfig.endpoint = endpoint
             peerConfig.allowedIPs = [

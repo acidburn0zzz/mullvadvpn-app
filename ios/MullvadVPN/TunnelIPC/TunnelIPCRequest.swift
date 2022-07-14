@@ -9,44 +9,21 @@
 import Foundation
 
 extension TunnelIPC {
-    /// A enum describing kinds of requests that `PacketTunnelProvider` handles.
-    enum Request: Int, Codable, RawRepresentable, CustomStringConvertible {
-        /// Request the tunnel to reload settings.
-        case reloadTunnelSettings
+    /// Enum describing actions that packet tunnel provider supports.
+    enum Request: Codable, CustomStringConvertible {
+        /// Request the tunnel to reconnect.
+        /// The packet tunnel reconnects to the current relay when selector result is `nil`.
+        case reconnectTunnel(RelaySelectorResult?)
 
         /// Request the tunnel status.
         case getTunnelStatus
 
         var description: String {
             switch self {
-            case .reloadTunnelSettings:
-                return "reloadTunnelSettings"
+            case .reconnectTunnel:
+                return "reconnectTunnel"
             case .getTunnelStatus:
                 return "getTunnelStatus"
-            }
-        }
-
-        private enum CodingKeys: String, CodingKey {
-            case type
-        }
-
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(rawValue, forKey: CodingKeys.type)
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            let rawValue = try container.decode(RawValue.self, forKey: CodingKeys.type)
-
-            if let decoded = TunnelIPC.Request(rawValue: rawValue) {
-                self = decoded
-            } else {
-                throw DecodingError.dataCorruptedError(
-                    forKey: CodingKeys.type,
-                    in: container,
-                    debugDescription: "Unrecognized raw value."
-                )
             }
         }
     }

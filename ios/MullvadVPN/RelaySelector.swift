@@ -10,7 +10,7 @@ import Foundation
 import Network
 import Logging
 
-struct RelaySelectorResult: Codable {
+struct RelaySelectorResult: Codable, Equatable {
     var endpoint: MullvadEndpoint
     var relay: REST.ServerRelay
     var location: Location
