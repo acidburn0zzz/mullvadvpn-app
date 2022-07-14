@@ -488,34 +488,6 @@ extension WireGuardLogLevel {
     }
 }
 
-extension WireGuardAdapterError: LocalizedError {
-    public var errorDescription: String? {
-        switch self {
-        case .cannotLocateTunnelFileDescriptor:
-            return "Failure to locate tunnel file descriptor."
-
-        case .invalidState:
-            return "Failure to perform an operation in such state."
-
-        case .dnsResolution(let resolutionErrors):
-            let detailedErrorDescription = resolutionErrors
-                .enumerated()
-                .map { index, dnsResolutionError in
-                    return "\(index): \(dnsResolutionError.address) \(dnsResolutionError.errorDescription ?? "???")"
-                }
-                .joined(separator: "\n")
-
-            return "Failure to resolve endpoints:\n\(detailedErrorDescription)"
-
-        case .setNetworkSettings:
-            return "Failure to set network settings."
-
-        case .startWireGuardBackend(let code):
-            return "Failure to start WireGuard backend (error code: \(code))."
-        }
-    }
-}
-
 extension MullvadEndpoint {
     var ipv4RelayEndpoint: Endpoint {
         return Endpoint(host: .ipv4(ipv4Relay.ip), port: .init(integerLiteral: ipv4Relay.port))

@@ -266,6 +266,7 @@
 		58DF5B7C28521A9F00E92647 /* ResultOperation+Output.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58059DDF2846823E002B1049 /* ResultOperation+Output.swift */; };
 		58DF5B7D28521AAC00E92647 /* OutputOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58059DDD28468158002B1049 /* OutputOperation.swift */; };
 		58DF5B7F2852778600E92647 /* OperationSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DF5B7E2852778600E92647 /* OperationSmokeTests.swift */; };
+		58E07299288031D5008902F8 /* WireGuardAdapterError+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E07298288031D5008902F8 /* WireGuardAdapterError+Localization.swift */; };
 		58E0A98827C8F46300FE6BDD /* Tunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E0A98727C8F46300FE6BDD /* Tunnel.swift */; };
 		58E20771274672CA00DE5D77 /* LaunchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E20770274672CA00DE5D77 /* LaunchViewController.swift */; };
 		58E25F812837BBBB002CFB2C /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E25F802837BBBB002CFB2C /* SceneDelegate.swift */; };
@@ -549,6 +550,7 @@
 		58DF5B752852108E00E92647 /* InputInjectionBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputInjectionBuilder.swift; sourceTree = "<group>"; };
 		58DF5B772852178600E92647 /* OperationInputInjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationInputInjectionTests.swift; sourceTree = "<group>"; };
 		58DF5B7E2852778600E92647 /* OperationSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationSmokeTests.swift; sourceTree = "<group>"; };
+		58E07298288031D5008902F8 /* WireGuardAdapterError+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WireGuardAdapterError+Localization.swift"; sourceTree = "<group>"; };
 		58E0A98727C8F46300FE6BDD /* Tunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tunnel.swift; sourceTree = "<group>"; };
 		58E20770274672CA00DE5D77 /* LaunchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchViewController.swift; sourceTree = "<group>"; };
 		58E25F802837BBBB002CFB2C /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -983,6 +985,7 @@
 				5838318A27C40A3900000571 /* Pinger.swift */,
 				58FC040927B3EE03001C21F0 /* TunnelMonitor.swift */,
 				58655DCD27DA0A5D00911834 /* TunnelMonitorConfiguration.swift */,
+				58E07298288031D5008902F8 /* WireGuardAdapterError+Localization.swift */,
 			);
 			path = PacketTunnel;
 			sourceTree = "<group>";
@@ -1504,6 +1507,7 @@
 				5806767C27048E9B00C858CB /* PacketTunnelProvider.swift in Sources */,
 				585DA89426B0323E00B8C587 /* TunnelIPCRequest.swift in Sources */,
 				587AD7C723421D8600E93A53 /* TunnelSettingsV1.swift in Sources */,
+				58E07299288031D5008902F8 /* WireGuardAdapterError+Localization.swift in Sources */,
 				5875960B26F3723000BF6711 /* TunnelIPC.swift in Sources */,
 				58AEEF662344A37400C9BBD5 /* KeychainError.swift in Sources */,
 				582AD44127BE6178002A6BFC /* CodingErrors+ChainedError.swift in Sources */,
