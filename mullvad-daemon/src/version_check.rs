@@ -8,7 +8,7 @@ use futures::{
     FutureExt, SinkExt, StreamExt, TryFutureExt,
 };
 use mullvad_api::{availability::ApiAvailabilityHandle, rest::MullvadRestHandle, AppVersionProxy};
-use mullvad_types::version::{AppVersionInfo, ParsedAppVersion};
+use mullvad_types::version::{AppVersionInfo, ParsedAppVersion, XThresholdWgDefault};
 use serde::{Deserialize, Serialize};
 use std::{
     future::Future,
@@ -286,6 +286,7 @@ impl VersionUpdater {
             latest_stable: response.latest_stable.unwrap_or_else(|| "".to_owned()),
             latest_beta: response.latest_beta,
             suggested_upgrade,
+            x_threshold_wg_default: response.x_threshold_wg_default.map(|f| XThresholdWgDefault(f)),
         }
     }
 
@@ -370,6 +371,7 @@ impl VersionUpdater {
                                     latest_stable: last_app_version_info.latest_stable,
                                     latest_beta: last_app_version_info.latest_beta,
                                     suggested_upgrade,
+                                    x_threshold_wg_default: last_app_version_info.x_threshold_wg_default,
                                 }).await;
                             }
                         }
@@ -407,6 +409,7 @@ impl VersionUpdater {
                         Ok(version_info_response) => {
                             let new_version_info =
                                 self.response_to_version_info(version_info_response);
+                            dbg!(&new_version_info);
                             self.update_version_info(new_version_info).await;
                         },
                         Err(err) => {

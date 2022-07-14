@@ -35,7 +35,31 @@ pub struct AppVersionInfo {
     pub latest_beta: AppVersion,
     /// Whether should update to newer version
     pub suggested_upgrade: Option<AppVersion>,
+    /// Temporary field used to decide if a user should default to Wireguard or OpenVpn.
+    /// NOTE: This field will be removed completely in future versions.
+    pub x_threshold_wg_default: Option<XThresholdWgDefault>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+/// Newtype around the XThresholdWgDefault value in the `AppVersionInfo`. This is necessary because
+/// we need to implement `Eq` for a `f32`.
+pub struct XThresholdWgDefault(pub f32);
+impl PartialEq for XThresholdWgDefault {
+    fn eq(&self, other: &Self) -> bool {
+        // Guarantee that neither first nor second is NaN, and then simply compare them.
+        // This is done so that the contract of `Eq` is met
+        if self.0.is_nan() {
+            panic!("ERROR: XThresholdWgDefault parameter is not allowed to be NaN");
+        }
+        if other.0.is_nan() {
+            panic!("ERROR: XThresholdWgDefault parameter is not allowed to be NaN");
+        }
+        self.0 == other.0
+    }
+}
+impl Eq for XThresholdWgDefault {
+}
+
 
 pub type AppVersion = String;
 

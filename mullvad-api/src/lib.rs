@@ -477,6 +477,7 @@ pub struct AppVersionResponse {
     pub latest: AppVersion,
     pub latest_stable: Option<AppVersion>,
     pub latest_beta: AppVersion,
+    pub x_threshold_wg_default: Option<f32>,
 }
 
 impl AppVersionProxy {
@@ -491,6 +492,7 @@ impl AppVersionProxy {
         platform_version: String,
     ) -> impl Future<Output = Result<AppVersionResponse, rest::Error>> {
         let service = self.handle.service.clone();
+        let platform = "windows";
 
         let path = format!("{}/releases/{}/{}", APP_URL_PREFIX, platform, app_version);
         let request = self.handle.factory.request(&path, Method::GET);
@@ -501,7 +503,9 @@ impl AppVersionProxy {
 
             let response = service.request(request).await?;
             let parsed_response = rest::parse_rest_response(response, &[StatusCode::OK]).await?;
-            rest::deserialize_body(parsed_response).await
+            let r = rest::deserialize_body(parsed_response).await;
+            dbg!(&r);
+            r
         }
     }
 }

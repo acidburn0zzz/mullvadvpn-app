@@ -2,7 +2,7 @@
 use futures::TryFutureExt;
 use mullvad_types::{
     relay_constraints::{BridgeSettings, BridgeState, ObfuscationSettings, RelaySettingsUpdate},
-    settings::{DnsOptions, Settings},
+    settings::{DnsOptions, Settings, XWgMigrationRandNum},
     wireguard::RotationInterval,
 };
 #[cfg(target_os = "windows")]
@@ -294,6 +294,11 @@ impl SettingsPersister {
 
     pub async fn set_bridge_state(&mut self, bridge_state: BridgeState) -> Result<bool, Error> {
         let should_save = self.settings.set_bridge_state(bridge_state);
+        self.update(should_save).await
+    }
+
+    pub async fn set_x_wg_migration_rand_num(&mut self, x_wg_migration_rand_num: Option<XWgMigrationRandNum>) -> Result<bool, Error> {
+        let should_save = Self::update_field(&mut self.settings.x_wg_migration_rand_num, x_wg_migration_rand_num);
         self.update(should_save).await
     }
 

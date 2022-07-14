@@ -91,6 +91,28 @@ pub struct Settings {
     /// Specifies settings schema version
     #[cfg_attr(target_os = "android", jnix(skip))]
     settings_version: SettingsVersion,
+    /// Temporary variable for a random number between 0 and 1 that determines if the user should
+    /// use wireguard or openvpn when the automatic feature is set. This variable will be removed
+    /// in future versions.
+    pub x_wg_migration_rand_num: Option<XWgMigrationRandNum>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct XWgMigrationRandNum(pub f32);
+impl PartialEq for XWgMigrationRandNum {
+    fn eq(&self, other: &Self) -> bool {
+        // Guarantee that neither first nor second is NaN, and then simply compare them.
+        // This is done so that the contract of `Eq` is met
+        if self.0.is_nan() {
+            panic!("ERROR: XThresholdWgDefault parameter is not allowed to be NaN");
+        }
+        if other.0.is_nan() {
+            panic!("ERROR: XThresholdWgDefault parameter is not allowed to be NaN");
+        }
+        self.0 == other.0
+    }
+}
+impl Eq for XWgMigrationRandNum {
 }
 
 #[cfg(windows)]
@@ -123,6 +145,7 @@ impl Default for Settings {
             #[cfg(windows)]
             split_tunnel: SplitTunnelSettings::default(),
             settings_version: CURRENT_SETTINGS_VERSION,
+            x_wg_migration_rand_num: None,
         }
     }
 }

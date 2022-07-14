@@ -651,6 +651,8 @@ where
             account_manager.clone(),
             relay_selector.clone(),
             settings.tunnel_options.clone(),
+            cache_dir.clone(),
+            settings_dir,
         );
         let (offline_state_tx, offline_state_rx) = mpsc::unbounded();
         #[cfg(target_os = "windows")]

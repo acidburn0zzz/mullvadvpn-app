@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 use mullvad_relay_selector::{RelaySelector, SelectedBridge, SelectedObfuscator, SelectedRelay};
 use mullvad_types::{
-    endpoint::MullvadEndpoint, location::GeoIpLocation, relay_list::Relay, settings::TunnelOptions,
+    endpoint::MullvadEndpoint, location::GeoIpLocation, relay_list::Relay, settings::{TunnelOptions, XWgMigrationRandNum},
 };
 use talpid_core::tunnel_state_machine::TunnelParametersGenerator;
 use talpid_types::{
@@ -41,6 +41,9 @@ struct InnerParametersGenerator {
     tunnel_options: TunnelOptions,
     account_manager: AccountManagerHandle,
 
+    cache_dir: PathBuf,
+    settings_dir: PathBuf,
+
     // TODO: Move this to `RelaySelector`?
     last_generated_relays: Option<LastSelectedRelays>,
 }
@@ -51,12 +54,17 @@ impl ParametersGenerator {
         account_manager: AccountManagerHandle,
         relay_selector: RelaySelector,
         tunnel_options: TunnelOptions,
+        cache_dir: PathBuf,
+        settings_dir: PathBuf,
     ) -> Self {
         Self(Arc::new(Mutex::new(InnerParametersGenerator {
             tunnel_options,
             relay_selector,
 
             account_manager,
+
+            cache_dir,
+            settings_dir,
 
             last_generated_relays: None,
         })))
@@ -119,10 +127,51 @@ impl ParametersGenerator {
     }
 }
 
+use crate::version_check::load_cache;
+use crate::SettingsPersister;
+use std::path::PathBuf;
+use rand::Rng;
 impl InnerParametersGenerator {
     async fn generate(&mut self, retry_attempt: u32) -> Result<TunnelParameters, Error> {
+        let x_threshold_wg_default = match load_cache(&self.cache_dir).await {
+            Some(cache) => {
+                match cache.x_threshold_wg_default {
+                    Some(value) => value.0,
+                    None => {
+                        // Log that the x_threshold_wg_default value was not found in the latest
+                        // version check and that we are defaulting to Wireguard
+                        log::warn!("No x_threshold_wg_default value found in version cache, defaulting to Wireguard");
+                        1.0
+                    }
+                }
+            }
+            None => {
+                // Log error that we can not read cache and therefore are using Wireguard.
+                log::error!("Could not read version cache, defaulting to Wireguard");
+                1.0
+            }
+        };
+        let mut settings = SettingsPersister::load(&self.settings_dir).await;
+        let x_wg_migration_rand_num = match &settings.x_wg_migration_rand_num {
+            Some(num) => num.0,
+            None => {
+                let mut rng = rand::thread_rng();
+                let num: f32 = rng.gen_range(0.0, 1.0);
+                // Save num in settings.
+                if let Err(e) = settings.set_x_wg_migration_rand_num(Some(XWgMigrationRandNum(num))).await {
+                    // Log that we could not persist the random number (we will generate a new one
+                    // next time
+                    log::error!("Could not persist x_wg_migration_rand_num to the settings file and as such will generate a new one next time. {}", e);
+                }
+                num
+            }
+        };
+        let default_to_wg = x_wg_migration_rand_num < x_threshold_wg_default;
+        dbg!(x_wg_migration_rand_num, x_threshold_wg_default);
+        dbg!(default_to_wg);
+
         let _data = self.device().await?;
-        match self.relay_selector.get_relay(retry_attempt) {
+        match self.relay_selector.get_relay(retry_attempt, default_to_wg) {
             Ok((SelectedRelay::Custom(custom_relay), _bridge, _obfsucator)) => {
                 custom_relay
                     // TODO: generate proxy settings for custom tunnels
