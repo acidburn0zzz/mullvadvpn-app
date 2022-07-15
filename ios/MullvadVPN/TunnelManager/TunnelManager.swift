@@ -444,7 +444,7 @@ final class TunnelManager {
 
             switch completion {
             case .success:
-                self.reconnectTunnel(selectNewRelay: false) { _ in
+                self.reconnectTunnel(selectNewRelay: true) { _ in
                     completionHandler(completion)
                 }
 
