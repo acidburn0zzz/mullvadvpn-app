@@ -348,7 +348,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     }
 
     private func reconnectTunnel(
-        selectorResult inputSelectorResult: RelaySelectorResult?,
+        selectorResult aSelectorResult: RelaySelectorResult?,
         completionHandler: @escaping (Error?) -> Void
     )
     {
@@ -357,8 +357,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         // Read tunnel configuration.
         let tunnelConfiguration: PacketTunnelConfiguration
         do {
-            let newSelectorResult = inputSelectorResult ?? selectorResult
-            tunnelConfiguration = try makeConfiguration(newSelectorResult)
+            tunnelConfiguration = try makeConfiguration(aSelectorResult ?? selectorResult)
         } catch {
             completionHandler(error)
             return
