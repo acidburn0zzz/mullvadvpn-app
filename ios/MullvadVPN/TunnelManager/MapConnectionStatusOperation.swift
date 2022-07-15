@@ -108,9 +108,7 @@ class MapConnectionStatusOperation: AsyncOperation {
         mapRelayToState: @escaping (PacketTunnelRelay?) -> TunnelState?
     )
     {
-        let session = TunnelIPC.Session(tunnel: tunnel)
-
-        request = session.getTunnelStatus { [weak self] completion in
+        request = tunnel.getTunnelStatus { [weak self] completion in
             guard let self = self else { return }
 
             self.dispatchQueue.async {

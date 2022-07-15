@@ -49,9 +49,7 @@ class ReconnectTunnelOperation: ResultOperation<(), TunnelManager.Error> {
             }
         }
 
-        let session = TunnelIPC.Session(tunnel: tunnel)
-
-        task = session.reconnectTunnel(
+        task = tunnel.reconnectTunnel(
             relaySelectorResult: selectorResult
         ) { [weak self] completion in
             self?.finish(completion: completion.mapError { .ipcError($0) })

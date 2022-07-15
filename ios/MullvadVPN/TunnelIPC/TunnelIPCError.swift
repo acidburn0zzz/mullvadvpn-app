@@ -53,10 +53,8 @@ extension TunnelIPC {
             switch self {
             case .tunnelDown(let status):
                 return "Tunnel is either down or about to go down (status: \(status))"
-
             case .timeout:
                 return "Request timeout"
-
             case .system:
                 return "System error"
             }
