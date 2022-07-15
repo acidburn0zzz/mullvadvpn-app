@@ -43,8 +43,9 @@ struct TunnelStatus: Equatable, CustomStringConvertible {
 
     /// Resets all fields to their defaults and assigns the next tunnel state.
     mutating func reset(to newState: TunnelState) {
-        packetTunnelStatus.isNetworkReachable = true
-        packetTunnelStatus.connectingDate = nil
+        let currentRelay = packetTunnelStatus.tunnelRelay
+        packetTunnelStatus = PacketTunnelStatus()
+        packetTunnelStatus.tunnelRelay = currentRelay
         state = newState
     }
 }
