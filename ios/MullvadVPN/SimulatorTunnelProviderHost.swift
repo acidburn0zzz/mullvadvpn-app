@@ -14,7 +14,7 @@ import Logging
 
 class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
 
-    private var tunnelStatus = PacketTunnelStatus(isNetworkReachable: true, connectingDate: nil, tunnelRelay: nil)
+    private var tunnelStatus = PacketTunnelStatus()
     private let providerLogger = Logger(label: "SimulatorTunnelProviderHost")
     private let dispatchQueue = DispatchQueue(label: "SimulatorTunnelProviderHostQueue")
 

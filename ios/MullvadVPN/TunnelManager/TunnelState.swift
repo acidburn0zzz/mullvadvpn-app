@@ -10,11 +10,8 @@ import Foundation
 
 /// A struct describing the tunnel status.
 struct TunnelStatus: Equatable, CustomStringConvertible {
-    /// Whether netowork is reachable.
-    var isNetworkReachable: Bool = true
-
-    /// When the packet tunnel started connecting.
-    var connectingDate: Date?
+    /// Tunnel status returned by the tunnel process.
+    var packetTunnelStatus = PacketTunnelStatus()
 
     /// Tunnel state.
     var state: TunnelState = .disconnected
@@ -22,13 +19,13 @@ struct TunnelStatus: Equatable, CustomStringConvertible {
     var description: String {
         var s = "\(state), network "
 
-        if isNetworkReachable {
+        if packetTunnelStatus.isNetworkReachable {
             s += "reachable"
         } else {
             s += "unreachable"
         }
 
-        if let connectingDate = connectingDate {
+        if let connectingDate = packetTunnelStatus.connectingDate {
             s += ", started connecting at \(connectingDate.logFormatDate())"
         }
 
@@ -37,8 +34,7 @@ struct TunnelStatus: Equatable, CustomStringConvertible {
 
     /// Updates the tunnel status from packet tunnel status, mapping relay to tunnel state.
     mutating func update(from packetTunnelStatus: PacketTunnelStatus, mappingRelayToState mapper: (PacketTunnelRelay?) -> TunnelState?) {
-        isNetworkReachable = packetTunnelStatus.isNetworkReachable
-        connectingDate = packetTunnelStatus.connectingDate
+        self.packetTunnelStatus = packetTunnelStatus
 
         if let newState = mapper(packetTunnelStatus.tunnelRelay) {
             state = newState
@@ -47,8 +43,8 @@ struct TunnelStatus: Equatable, CustomStringConvertible {
 
     /// Resets all fields to their defaults and assigns the next tunnel state.
     mutating func reset(to newState: TunnelState) {
-        isNetworkReachable = true
-        connectingDate = nil
+        packetTunnelStatus.isNetworkReachable = true
+        packetTunnelStatus.connectingDate = nil
         state = newState
     }
 }
