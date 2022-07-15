@@ -703,6 +703,7 @@
 				58F2E147276A307400A79513 /* MapConnectionStatusOperation.swift */,
 				58161C9B28352F850028ECFD /* MigrateSettingsOperation.swift */,
 				587C575226D2615F005EF767 /* PacketTunnelOptions.swift */,
+				585DA89826B0329200B8C587 /* PacketTunnelStatus.swift */,
 				584B17AA27637DE40057F3B8 /* ReconnectTunnelOperation.swift */,
 				58F2E14B276A61C000A79513 /* RotateKeyOperation.swift */,
 				588527B3276B4F2F00BAA373 /* SetAccountOperation.swift */,
@@ -784,7 +785,6 @@
 		585DA88D26B031D100B8C587 /* TunnelIPC */ = {
 			isa = PBXGroup;
 			children = (
-				585DA89826B0329200B8C587 /* PacketTunnelStatus.swift */,
 				5845F841236CBACD00B2D93C /* TunnelIPC.swift */,
 				585DA88E26B031E200B8C587 /* TunnelIPCCoding.swift */,
 				5875960626F36B3A00BF6711 /* TunnelIPCError.swift */,
