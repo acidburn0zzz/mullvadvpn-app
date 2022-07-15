@@ -29,6 +29,15 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     /// completion handler passed into `startTunnel`.
     private var isConnected = false
 
+    /// Flag indicating whether network is reachable.
+    private var isNetworkReachable = true
+
+    /// When the packet tunnel started connecting.
+    private var connectingDate: Date?
+
+    /// Current selector result.
+    private var selectorResult: RelaySelectorResult?
+
     /// A system completion handler passed from startTunnel and saved for later use once the
     /// connection is established.
     private var startTunnelCompletionHandler: ((Error?) -> Void)?
@@ -40,11 +49,14 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
     /// Tunnel monitor.
     private var tunnelMonitor: TunnelMonitor!
 
-    /// Tunnel status.
-    private var tunnelStatus = PacketTunnelStatus()
-
-    /// Last relay selector result.
-    private var selectorResult: RelaySelectorResult?
+    /// Returns `PacketTunnelStatus` used for sharing with main bundle process.
+    private var packetTunnelStatus: PacketTunnelStatus {
+        return PacketTunnelStatus(
+            isNetworkReachable: isNetworkReachable,
+            connectingDate: connectingDate,
+            tunnelRelay: selectorResult?.packetTunnelRelay
+        )
+    }
 
     override init() {
         let pid = ProcessInfo.processInfo.processIdentifier
@@ -117,10 +129,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
         // Set tunnel status.
         dispatchQueue.async {
-            let tunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
-            self.tunnelStatus.tunnelRelay = tunnelRelay
-            self.selectorResult = tunnelConfiguration.selectorResult
-            self.providerLogger.debug("Set tunnel relay to \(tunnelRelay.hostname).")
+            let selectorResult = tunnelConfiguration.selectorResult
+            self.selectorResult = selectorResult
+            self.providerLogger.debug("Set tunnel relay to \(selectorResult.relay.hostname).")
         }
 
         // Start tunnel.
@@ -220,7 +231,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             case .getTunnelStatus:
                 var response: Data?
                 do {
-                    response = try TunnelIPC.Coding.encodeResponse(self.tunnelStatus)
+                    response = try TunnelIPC.Coding.encodeResponse(self.packetTunnelStatus)
                 } catch {
                     self.providerLogger.error(
                         chainedError: AnyChainedError(error),
@@ -249,7 +260,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
         providerLogger.debug("Connection established.")
 
-        tunnelStatus.connectingDate = nil
+        connectingDate = nil
 
         startTunnelCompletionHandler?(nil)
         startTunnelCompletionHandler = nil
@@ -291,7 +302,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
         // Update tunnel status.
         let tunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
-        tunnelStatus.tunnelRelay = tunnelRelay
         selectorResult = tunnelConfiguration.selectorResult
         providerLogger.debug("Set tunnel relay to \(tunnelRelay.hostname).")
 
@@ -310,12 +320,12 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         networkReachabilityStatusDidChange isNetworkReachable: Bool
     )
     {
-        tunnelStatus.isNetworkReachable = isNetworkReachable
+        self.isNetworkReachable = isNetworkReachable
 
         // Adjust the start reconnect date if tunnel monitor re-started pinging in response to
         // network connectivity coming back up.
         if let startDate = tunnelMonitor.startDate {
-            tunnelStatus.connectingDate = startDate
+            connectingDate = startDate
         }
     }
 
@@ -347,7 +357,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         // Read tunnel configuration.
         let tunnelConfiguration: PacketTunnelConfiguration
         do {
-            tunnelConfiguration = try makeConfiguration(inputSelectorResult ?? selectorResult)
+            let newSelectorResult = inputSelectorResult ?? selectorResult
+            tunnelConfiguration = try makeConfiguration(newSelectorResult)
         } catch {
             completionHandler(error)
             return
@@ -355,13 +366,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
         // Copy old relay.
         let oldSelectorResult = selectorResult
-        let oldTunnelRelay = tunnelStatus.tunnelRelay
         let newTunnelRelay = tunnelConfiguration.selectorResult.packetTunnelRelay
 
         // Update tunnel status.
-        tunnelStatus.tunnelRelay = newTunnelRelay
-        tunnelStatus.connectingDate = nil
         selectorResult = tunnelConfiguration.selectorResult
+        connectingDate = nil
 
         providerLogger.debug("Set tunnel relay to \(newTunnelRelay.hostname).")
 
@@ -380,11 +389,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
                 // Call completion handler immediately on error to update adapter configuration.
                 if let error = error {
-                    // Revert to previously used tunnel relay.
-                    self.tunnelStatus.tunnelRelay = oldTunnelRelay
+                    // Revert to previously used relay selector.
                     self.selectorResult = oldSelectorResult
                     self.providerLogger.debug(
-                        "Reset tunnel relay to \(oldTunnelRelay?.hostname ?? "none")."
+                        "Reset tunnel relay to \(oldSelectorResult?.relay.hostname ?? "none")."
                     )
 
                     // Lower the reasserting flag.
@@ -421,7 +429,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
         tunnelMonitor.start(address: gatewayAddress)
 
         // Mark when the tunnel started monitoring connection.
-        tunnelStatus.connectingDate = tunnelMonitor.startDate
+        connectingDate = tunnelMonitor.startDate
     }
 
     /// Load relay cache with potential networking to refresh the cache and pick the relay for the
@@ -442,88 +450,5 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             relays: cachedRelayList.relays,
             constraints: relayConstraints
         )
-    }
-}
-
-struct PacketTunnelConfiguration {
-    var deviceState: DeviceState
-    var tunnelSettings: TunnelSettingsV2
-    var selectorResult: RelaySelectorResult
-}
-
-extension PacketTunnelConfiguration {
-    var wgTunnelConfig: TunnelConfiguration {
-        let mullvadEndpoint = selectorResult.endpoint
-        var peers = [mullvadEndpoint.ipv4RelayEndpoint]
-        if let ipv6RelayEndpoint = mullvadEndpoint.ipv6RelayEndpoint {
-            peers.append(ipv6RelayEndpoint)
-        }
-
-        let peerConfigs = peers.compactMap { (endpoint) -> PeerConfiguration in
-            let pubKey = PublicKey(rawValue: mullvadEndpoint.publicKey)!
-            var peerConfig = PeerConfiguration(publicKey: pubKey)
-            peerConfig.endpoint = endpoint
-            peerConfig.allowedIPs = [
-                IPAddressRange(from: "0.0.0.0/0")!,
-                IPAddressRange(from: "::/0")!
-            ]
-            return peerConfig
-        }
-
-        var interfaceConfig: InterfaceConfiguration
-
-        switch deviceState {
-        case .loggedIn(_, let device):
-            interfaceConfig = InterfaceConfiguration(privateKey: device.wgKeyData.privateKey)
-            interfaceConfig.addresses = [device.ipv4Address, device.ipv6Address]
-            interfaceConfig.dns = dnsServers.map { DNSServer(address: $0) }
-
-        case .loggedOut, .revoked:
-            interfaceConfig = InterfaceConfiguration(privateKey: PrivateKey())
-        }
-
-        interfaceConfig.listenPort = 0
-
-        return TunnelConfiguration(name: nil, interface: interfaceConfig, peers: peerConfigs)
-    }
-
-    var dnsServers: [IPAddress] {
-        let mullvadEndpoint = selectorResult.endpoint
-        let dnsSettings = tunnelSettings.dnsSettings
-
-        if dnsSettings.effectiveEnableCustomDNS {
-            let dnsServers = dnsSettings.customDNSDomains
-                .prefix(DNSSettings.maxAllowedCustomDNSDomains)
-            return Array(dnsServers)
-        } else {
-            if let serverAddress = dnsSettings.blockingOptions.serverAddress {
-                return [serverAddress]
-            } else {
-                return [mullvadEndpoint.ipv4Gateway, mullvadEndpoint.ipv6Gateway]
-            }
-        }
-    }
-}
-
-extension WireGuardLogLevel {
-    var loggerLevel: Logger.Level {
-        switch self {
-        case .verbose:
-            return .debug
-        case .error:
-            return .error
-        }
-    }
-}
-
-extension MullvadEndpoint {
-    var ipv4RelayEndpoint: Endpoint {
-        return Endpoint(host: .ipv4(ipv4Relay.ip), port: .init(integerLiteral: ipv4Relay.port))
-    }
-
-    var ipv6RelayEndpoint: Endpoint? {
-        guard let ipv6Relay = ipv6Relay else { return nil }
-
-        return Endpoint(host: .ipv6(ipv6Relay.ip), port: .init(integerLiteral: ipv6Relay.port))
     }
 }
