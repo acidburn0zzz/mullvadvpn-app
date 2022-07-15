@@ -13,8 +13,8 @@ import enum NetworkExtension.NEProviderStopReason
 import Logging
 
 class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
+    private var selectorResult: RelaySelectorResult?
 
-    private var tunnelStatus = PacketTunnelStatus()
     private let providerLogger = Logger(label: "SimulatorTunnelProviderHost")
     private let dispatchQueue = DispatchQueue(label: "SimulatorTunnelProviderHostQueue")
 
@@ -29,15 +29,14 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
             } catch {
                 self.providerLogger.error(
                     chainedError: AnyChainedError(error),
-                    message: "Failed to decode relay selector result passed from the app. Will continue by picking new relay."
+                    message: """
+                             Failed to decode relay selector result passed from the app. \
+                             Will continue by picking new relay.
+                             """
                 )
             }
 
-            if selectorResult == nil {
-                selectorResult = self.pickRelay()
-            }
-
-            self.tunnelStatus.tunnelRelay = selectorResult?.packetTunnelRelay
+            self.selectorResult = selectorResult ?? self.pickRelay()
 
             completionHandler(nil)
         }
@@ -45,7 +44,7 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         dispatchQueue.async {
-            self.tunnelStatus = PacketTunnelStatus(isNetworkReachable: true, connectingDate: nil, tunnelRelay: nil)
+            self.selectorResult = nil
 
             completionHandler()
         }
@@ -57,7 +56,10 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
             do {
                 request = try TunnelIPC.Coding.decodeRequest(messageData)
             } catch {
-                self.providerLogger.error(chainedError: AnyChainedError(error), message: "Failed to decode the IPC request.")
+                self.providerLogger.error(
+                    chainedError: AnyChainedError(error),
+                    message: "Failed to decode the IPC request."
+                )
                 completionHandler?(nil)
                 return
             }
@@ -67,15 +69,22 @@ class SimulatorTunnelProviderHost: SimulatorTunnelProviderDelegate {
             switch request {
             case .getTunnelStatus:
                 do {
-                    response = try TunnelIPC.Coding.encodeResponse(self.tunnelStatus)
+                    var tunnelStatus = PacketTunnelStatus()
+                    tunnelStatus.tunnelRelay = self.selectorResult?.packetTunnelRelay
+
+                    response = try TunnelIPC.Coding.encodeResponse(tunnelStatus)
                 } catch {
-                    self.providerLogger.error(chainedError: AnyChainedError(error), message: "Failed to encode tunnel status IPC response.")
+                    self.providerLogger.error(
+                        chainedError: AnyChainedError(error),
+                        message: "Failed to encode tunnel status IPC response."
+                    )
                 }
 
-            case .reconnectTunnel(let inputSelectorResult):
+            case .reconnectTunnel(let aSelectorResult):
                 self.reasserting = true
-                let selectorResult = inputSelectorResult ?? self.pickRelay()
-                self.tunnelStatus.tunnelRelay = selectorResult?.packetTunnelRelay
+                if let aSelectorResult = aSelectorResult {
+                    self.selectorResult = aSelectorResult
+                }
                 self.reasserting = false
             }
 
