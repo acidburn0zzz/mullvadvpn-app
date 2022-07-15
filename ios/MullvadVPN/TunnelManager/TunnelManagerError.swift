@@ -18,14 +18,14 @@ extension TunnelManager {
         case systemVPNError(Swift.Error)
         case settingsStoreError(Swift.Error)
         case restError(REST.Error)
-        case ipcError(TunnelIPC.Error)
+        case ipcError(Swift.Error)
 
         var errorDescription: String? {
             switch self {
             case .unsetTunnel:
                 return "Tunnel is unset."
             case .invalidDeviceState:
-                return "Cannot complete the request in such device state."
+                return "Cannot complete request in such device state."
             case .deviceRevoked:
                 return "Device is revoked."
             case .relayListUnavailable:

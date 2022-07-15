@@ -194,22 +194,22 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         dispatchQueue.async {
-            let request: TunnelIPC.Request
+            let message: TunnelProviderMessage
             do {
-                request = try TunnelIPC.Coding.decodeRequest(messageData)
+                message = try TunnelProviderMessage(messageData: messageData)
             } catch {
                 self.providerLogger.error(
                     chainedError: AnyChainedError(error),
-                    message: "Failed to decode the app message request."
+                    message: "Failed to decode the app message."
                 )
 
                 completionHandler?(nil)
                 return
             }
 
-            self.providerLogger.debug("Received app message: \(request)")
+            self.providerLogger.debug("Received app message: \(message)")
 
-            switch request {
+            switch message {
             case .reconnectTunnel(let appSelectorResult):
                 self.providerLogger.debug("Reconnecting the tunnel...")
 
@@ -231,11 +231,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider, TunnelMonitorDelegate {
             case .getTunnelStatus:
                 var response: Data?
                 do {
-                    response = try TunnelIPC.Coding.encodeResponse(self.packetTunnelStatus)
+                    response = try TunnelProviderReply(self.packetTunnelStatus).encode()
                 } catch {
                     self.providerLogger.error(
                         chainedError: AnyChainedError(error),
-                        message: "Failed to encode the app message response for \(request)"
+                        message: "Failed to encode tunnel status reply."
                     )
                 }
 

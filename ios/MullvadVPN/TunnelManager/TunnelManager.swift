@@ -67,7 +67,7 @@ final class TunnelManager {
     private let operationQueue = AsyncOperationQueue()
     private let internalQueue = DispatchQueue(label: "TunnelManager.internalQueue")
 
-    private var statusObserver: Tunnel.StatusBlockObserver?
+    private var statusObserver: TunnelStatusBlockObserver?
     private var lastMapConnectionStatusOperation: Operation?
     private let observerList = ObserverList<TunnelObserver>()
 
