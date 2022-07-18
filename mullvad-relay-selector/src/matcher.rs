@@ -270,7 +270,7 @@ impl WireguardMatcher {
                     return None;
                 }
 
-                let mut port_index = rand::thread_rng().gen_range(0, port_amount);
+                let mut port_index = rand::thread_rng().gen_range(0..port_amount);
 
                 for range in data.port_ranges.iter() {
                     let ports_in_range = get_port_amount(range);

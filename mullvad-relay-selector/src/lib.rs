@@ -1075,7 +1075,7 @@ impl RelaySelector {
         } else {
             // Pick a random number in the range 1..=total_weight. This choses the relay with a
             // non-zero weight.
-            let mut i: u64 = rng.gen_range(1, total_weight + 1);
+            let mut i: u64 = rng.gen_range(1..=total_weight);
             Some(
                 relays
                     .iter()
