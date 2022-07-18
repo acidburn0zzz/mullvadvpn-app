@@ -33,7 +33,7 @@ class ReconnectTunnelOperation: ResultOperation<(), TunnelManager.Error> {
 
         var selectorResult: RelaySelectorResult?
         if selectNewRelay {
-            guard let cachedRelays = RelayCache.Tracker.shared.getCachedRelays() else {
+            guard let cachedRelays = try? RelayCache.Tracker.shared.getCachedRelays() else {
                 finish(completion: .failure(.relayListUnavailable))
                 return
             }

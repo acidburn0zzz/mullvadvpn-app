@@ -35,6 +35,12 @@ extension RelayCache {
         }
     }
 
+    struct NoCachedRelaysError: LocalizedError {
+        var errorDescription: String? {
+            return "Relay cache is empty."
+        }
+    }
+
     class Tracker {
         /// Relay update interval (in seconds).
         static let relayUpdateInterval: TimeInterval = 60 * 60
@@ -141,7 +147,7 @@ extension RelayCache {
             let operation = ResultBlockOperation<RelayCache.FetchResult, Error>(
                 dispatchQueue: nil
             ) { operation in
-                let cachedRelays = self.getCachedRelays()
+                let cachedRelays = try? self.getCachedRelays()
 
                 if self.getNextUpdateDate() > Date() {
                     operation.finish(completion: .success(.throttled))
@@ -174,11 +180,15 @@ extension RelayCache {
             return operation
         }
 
-        func getCachedRelays() -> CachedRelays? {
+        func getCachedRelays() throws -> CachedRelays {
             nslock.lock()
             defer { nslock.unlock() }
 
-            return cachedRelays
+            if let cachedRelays = cachedRelays {
+                return cachedRelays
+            } else {
+                throw NoCachedRelaysError()
+            }
         }
 
         func getNextUpdateDate() -> Date {
