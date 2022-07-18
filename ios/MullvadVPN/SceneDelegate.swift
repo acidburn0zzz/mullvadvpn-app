@@ -451,17 +451,21 @@ extension SceneDelegate {
 
 extension SceneDelegate: LoginViewControllerDelegate {
 
-    func loginViewController(_ controller: LoginViewController, loginWithAccountToken accountNumber: String, completion: @escaping (OperationCompletion<StoredAccountData?, TunnelManager.Error>) -> Void) {
+    func loginViewController(
+        _ controller: LoginViewController,
+        shouldHandleLoginAction action: LoginAction,
+        completion: @escaping (OperationCompletion<StoredAccountData?, TunnelManager.Error>) -> Void
+    ) {
         rootContainer.setEnableSettingsButton(false)
 
-        TunnelManager.shared.setAccount(action: .existing(accountNumber)) { operationCompletion in
+        TunnelManager.shared.setAccount(action: action.setAccountAction) { operationCompletion in
             switch operationCompletion {
             case .success:
-                self.logger.debug("Logged in with existing account.")
-                // RootContainer's settings button will be re-enabled in `loginViewControllerDidLogin`
+                self.logger.debug("Logged in with \(action.subjectDescription).")
+                // RootContainer's settings button will be re-enabled in `loginViewControllerDidFinishLogin`
 
             case .failure(let error):
-                self.logger.error(chainedError: error, message: "Failed to log in with existing account.")
+                self.logger.error(chainedError: error, message: "Failed to log in with \(action.subjectDescription).")
                 fallthrough
 
             case .cancelled:
@@ -472,28 +476,7 @@ extension SceneDelegate: LoginViewControllerDelegate {
         }
     }
 
-    func loginViewControllerLoginWithNewAccount(_ controller: LoginViewController, completion: @escaping (OperationCompletion<StoredAccountData?, TunnelManager.Error>) -> Void) {
-        rootContainer.setEnableSettingsButton(false)
-
-        TunnelManager.shared.setAccount(action: .new) { operationCompletion in
-            switch operationCompletion {
-            case .success:
-                self.logger.debug("Logged in with new account number.")
-                // RootContainer's settings button will be re-enabled in `loginViewControllerDidLogin`
-
-            case .failure(let error):
-                self.logger.error(chainedError: error, message: "Failed to log in with new account.")
-                fallthrough
-
-            case .cancelled:
-                self.rootContainer.setEnableSettingsButton(true)
-            }
-
-            completion(operationCompletion)
-        }
-    }
-
-    func loginViewControllerDidLogin(_ controller: LoginViewController) {
+    func loginViewControllerDidFinishLogin(_ controller: LoginViewController) {
         window?.isUserInteractionEnabled = false
 
         // Move the settings button back into header bar
