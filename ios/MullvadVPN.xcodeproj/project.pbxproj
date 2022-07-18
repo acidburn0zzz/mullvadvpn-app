@@ -194,6 +194,7 @@
 		5891BF1C25E3E3EB006D6FB0 /* Bundle+ProductVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5891BF1B25E3E3EB006D6FB0 /* Bundle+ProductVersion.swift */; };
 		5891BF5125E66B1E006D6FB0 /* UIBarButtonItem+KeyboardNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5891BF5025E66B1E006D6FB0 /* UIBarButtonItem+KeyboardNavigation.swift */; };
 		5892A45E265FABFF00890742 /* EmptyTableViewHeaderFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5892A45D265FABFF00890742 /* EmptyTableViewHeaderFooterView.swift */; };
+		5893716A28817A45004EE76C /* ManageDevicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5893716928817A45004EE76C /* ManageDevicesViewController.swift */; };
 		58968FAE28743E2000B799DC /* TunnelInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58968FAD28743E2000B799DC /* TunnelInteractor.swift */; };
 		5896AE84246D5889005B36CB /* CustomDateComponentsFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5896AE83246D5889005B36CB /* CustomDateComponentsFormatting.swift */; };
 		5896AE86246D6AD8005B36CB /* CustomDateComponentsFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5896AE85246D6AD8005B36CB /* CustomDateComponentsFormattingTests.swift */; };
@@ -486,6 +487,7 @@
 		5891BF1B25E3E3EB006D6FB0 /* Bundle+ProductVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+ProductVersion.swift"; sourceTree = "<group>"; };
 		5891BF5025E66B1E006D6FB0 /* UIBarButtonItem+KeyboardNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIBarButtonItem+KeyboardNavigation.swift"; sourceTree = "<group>"; };
 		5892A45D265FABFF00890742 /* EmptyTableViewHeaderFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTableViewHeaderFooterView.swift; sourceTree = "<group>"; };
+		5893716928817A45004EE76C /* ManageDevicesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageDevicesViewController.swift; sourceTree = "<group>"; };
 		58968FAD28743E2000B799DC /* TunnelInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelInteractor.swift; sourceTree = "<group>"; };
 		5896AE83246D5889005B36CB /* CustomDateComponentsFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomDateComponentsFormatting.swift; sourceTree = "<group>"; };
 		5896AE85246D6AD8005B36CB /* CustomDateComponentsFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomDateComponentsFormattingTests.swift; sourceTree = "<group>"; };
@@ -871,7 +873,6 @@
 				58293FB025124117005D0BB5 /* CustomTextField.swift */,
 				58293FB2251241B3005D0BB5 /* CustomTextView.swift */,
 				587EB66F27143B6500123C75 /* DataSourceSnapshot.swift */,
-				580909D22876D09A0078138D /* RevokedDeviceViewController.swift */,
 				58907D9424D17B4E00CFC3F5 /* DisconnectSplitButton.swift */,
 				58B9EB142489139B00095626 /* DisplayChainedError.swift */,
 				580F8B8528197958002E0998 /* DNSSettings.swift */,
@@ -892,6 +893,7 @@
 				5815039F24D6ECF200C9C50E /* Logging */,
 				58B993B02608A34500BA7811 /* LoginContentView.swift */,
 				58CE5E65224146200008646E /* LoginViewController.swift */,
+				5893716928817A45004EE76C /* ManageDevicesViewController.swift */,
 				5840250322B11AB700E4CFEC /* MullvadEndpoint.swift */,
 				5866F39B2243B82D00168AE5 /* MullvadVPN.entitlements */,
 				58906DDF2445C7A5002F0673 /* NEProviderStopReason+Debug.swift */,
@@ -918,6 +920,7 @@
 				585DA87F26B0268500B8C587 /* REST */,
 				58F1311427E0B2AB007AC5BC /* Result+Extensions.swift */,
 				5820676726E79E7B00655B05 /* Result+UIBackgroundFetchResult.swift */,
+				580909D22876D09A0078138D /* RevokedDeviceViewController.swift */,
 				587425C02299833500CA2045 /* RootContainerViewController.swift */,
 				58E25F802837BBBB002CFB2C /* SceneDelegate.swift */,
 				5888AD82227B11080051EB06 /* SelectLocationCell.swift */,
@@ -1325,6 +1328,7 @@
 				58DF5B742851FF3F00E92647 /* InputOperation.swift in Sources */,
 				58F8AC0E25D3F8CE002BE0ED /* ProblemReportReviewViewController.swift in Sources */,
 				58CCA010224249A1004F3011 /* ConnectViewController.swift in Sources */,
+				5893716A28817A45004EE76C /* ManageDevicesViewController.swift in Sources */,
 				58059DE02846823E002B1049 /* ResultOperation+Output.swift in Sources */,
 				588BCF282816D664009ADCEC /* RESTResponseHandler.swift in Sources */,
 				58554F77280AFD5C00013055 /* RESTTaskIdentifier.swift in Sources */,
