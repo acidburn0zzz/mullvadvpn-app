@@ -16,7 +16,7 @@ use mullvad_types::{
     CustomTunnelEndpoint,
 };
 use parking_lot::{Mutex, MutexGuard};
-use rand::{self, seq::SliceRandom, Rng};
+use rand::{seq::SliceRandom, Rng};
 use std::{
     io,
     net::{IpAddr, SocketAddr},

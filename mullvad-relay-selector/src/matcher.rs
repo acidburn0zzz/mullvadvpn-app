@@ -9,7 +9,7 @@ use mullvad_types::{
     },
 };
 use rand::{
-    prelude::{IteratorRandom, SliceRandom},
+    seq::{IteratorRandom, SliceRandom},
     Rng,
 };
 use std::net::{IpAddr, SocketAddr};
